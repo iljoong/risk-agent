@@ -1,0 +1,206 @@
+PROMPT
+/brainstorm
+
+I want to create a ChatGPT like app using Microsoft Agent Framework and GitHub Copilot SDK. 
+
+## UX
+
+- Provide similar UX, like chat history in left side bar and main chat window and can attach files and **call custom skills** in app from text input box.
+- Use ChatGPT style and icons as possible but use your additional imagination if needed.
+- Manage chat history.
+- Support Markdown text rendering in chat window
+- Show status progress and animated spinner icon while receiving response.
+- Optional right sidebar show generated html contents by tasks
+
+## Long/complex task and short/simple question handling
+  
+- Separate web and api, and handle long running process using HTTP async call for calling skills and other complex task. 
+- Classify long running task and short question. In case of short question, app responses immediately with streaming. 
+- Keep and manage generated contents in the chat session.
+- Generated contents can be used as context for chat session. That is, user can ask a question regarding the generated content.
+
+## Skill and tool support
+
+- Custom skills are located in app's skill folder, auto-discover at startup time and developer will provide skills later.
+- Generate a sample skill for the app
+- Support custom tools just like skills. Tools are not callable only for the app.
+
+========================================================================
+
+
+WORKROOM - QUESTIONS AND YOUR RESPONSES
+
+Clarification questions and recorded responses from this conversation.
+Responses retain their original wording and form field names.
+Temporary local mockup access keys have been redacted.
+
+========================================================================
+QUESTION 1
+
+If you'd rather skip the questions and have me start building, just say so.
+
+Walk me through a real task someone would use this app for, from their first message to the result they want to keep.
+
+YOUR RESPONSE
+
+first_task: ask me
+
+========================================================================
+QUESTION 2
+
+Who will use the first version of this app, and what work should it make easier for them?
+
+YOUR RESPONSE
+
+users_and_work: business user and use skills to do their work done, like customer research, RFP analysis and RFP response generation. Custom skills help these tasks done.
+
+========================================================================
+QUESTION 3
+
+The app is for business users completing substantial work through custom skills, with research and RFP work as key examples.
+
+For an RFP response, what would the user provide, and what should the app produce for them?
+
+YOUR RESPONSE
+
+rfp_workflow: RFP files via file attachment in the text input
+
+========================================================================
+QUESTION 4
+
+The RFP starts as a file attached directly in the chat input.
+
+What should a successful RFP response look like when the skill finishes?
+
+YOUR RESPONSE
+
+rfp_result: Draft HTML-based slides
+
+========================================================================
+QUESTION 5
+
+This might be easier if I show you. Want me to open a browser tab with some mockups?
+
+YOUR RESPONSE
+
+show_mockups: true
+
+========================================================================
+QUESTION 6
+
+The mockup shows your RFP workflow: attach a file, call a skill, see its progress, and open draft HTML slides beside the conversation. A follow-up question uses the saved draft as context. The app name, sample content, and version controls are my proposals.
+
+Open the preview at http://localhost:55915/?key=[REDACTED] if the browser didn't open automatically.
+
+What would you change about this workspace for your business users?
+
+YOUR RESPONSE
+
+workspace_feedback: it looks okay for me
+
+========================================================================
+QUESTION 7
+
+We’ll keep this layout as the visual direction, including the collapsible slide preview.
+
+Do you have a preferred frontend and backend stack, or should I choose them around Microsoft Agent Framework and GitHub Copilot SDK?
+
+YOUR RESPONSE
+
+technology_preferences: python based backend, React/typescript based frontend
+
+========================================================================
+QUESTION 8
+
+Python backend and React/TypeScript frontend are settled. Before proposing how the two agent SDKs fit together, I’d like to check their current Python integration docs so the design uses supported APIs.
+
+May I check those docs and inspect the current project folder?
+
+YOUR RESPONSE
+
+allow_recon: true
+
+========================================================================
+QUESTION 9
+
+The project folder has no existing application. Microsoft provides a Python `GitHubCopilotAgent` integration, and Copilot SDK supports streaming, custom tools, and folder-based skills, so we can connect the frameworks rather than build two separate agent systems ([Microsoft docs](https://github.com/microsoft/agent-framework/tree/main/python/packages/github_copilot), [skills docs](https://github.com/github/copilot-sdk/blob/main/docs/features/skills.md)).
+
+Will the first version run locally for one user, or serve multiple business users through a shared deployment?
+
+YOUR RESPONSE
+
+User cancelled the request.
+
+Your subsequent direct chat response:
+
+local single-user for now but add data isolation and background task execution. Add mockup UI for adding multi-user, authentication later implementation.
+
+========================================================================
+QUESTION 10
+
+The first version will run locally for one user, with data isolation and real background task execution. Authentication and multi-user behavior stay out of scope for now; their UI will be clearly marked as unavailable rather than pretending to work.
+
+I updated the mockup with an **Account & access** panel containing disabled sign-in, member management, and account-switching controls. It also shows a background task card with stage progress and cancellation: http://localhost:55915/?key=[REDACTED]
+
+My proposed backend approach is FastAPI, SQLite for durable chat and task records, and a separate worker process. Chats, attachments, tasks, and generated artifacts would all belong to an owner identity, initially a fixed local user. Ownership checks would apply to reads, downloads, previews, and task execution. Files would be separated by owner and chat. This prepares the data model for future authentication but does not make the current app safe for shared hosting.
+
+Closing the browser would not cancel a task; after a worker restart, interrupted work would be reported explicitly rather than silently restarted.
+
+When you said custom tools are “not callable only for the app,” did you mean tools should be callable only by the agent, with users explicitly selecting skills but not tools?
+
+YOUR RESPONSE
+
+tool_visibility: tools should be callable by the agent only
+
+========================================================================
+QUESTION 11
+
+Custom tools will be available only to the agent; users will select skills from the chat input. I propose making the sample skill an RFP-to-HTML-slides workflow so the first version demonstrates attachments, background processing, saved output, and follow-up questions end to end.
+
+Which attachment formats must the first version support?
+
+YOUR RESPONSE
+
+attachment_formats: pdf only
+
+========================================================================
+QUESTION 12
+
+PDF-only attachments are settled. My proposed first-version limit is text-based PDFs: scanned or image-only PDFs would show a clear “OCR not supported” message rather than produce an unreliable draft.
+
+For model access, should the backend use your locally signed-in GitHub Copilot account, or do you need a separate model-provider configuration?
+
+YOUR RESPONSE
+
+model_access: separate model-provider configuratio. I'll use Microsoft Foundry for both OpenAI and Cluade models and Azure Identity using DefaultAzureCredential. 
+
+========================================================================
+QUESTION 13
+
+We’ll use **Microsoft Foundry for both OpenAI and Claude**, with backend authentication through **`DefaultAzureCredential`**, not your GitHub Copilot login. This is separate from the app’s future user sign-in.
+
+The current [Copilot SDK provider configuration](https://github.com/github/copilot-sdk/blob/main/docs/auth/byok.md) supports an on-demand bearer-token callback, and [Foundry’s Claude documentation](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-claude) supports Entra authentication. I’ll design for refreshable tokens rather than storing a token that could expire during a long task. OpenAI and Claude will have separate endpoint and deployment settings because they use different API formats; the exact Agent Framework-to-Copilot configuration path still needs verification before implementation.
+
+Should users choose the model in each chat, or should the app choose it automatically?
+
+YOUR RESPONSE
+
+model_selection: user can select model choices. model choices will be provided via environment variable.
+
+========================================================================
+QUESTION 14
+
+The design is written and its builder check found no important unanswered questions: [Read the design](docs/superpowers/specs/2026-10-21-business-skill-chat-design.md).
+
+It includes your environment-driven, per-chat model selector and Foundry authentication through `DefaultAzureCredential` for both OpenAI and Claude.
+
+My proposed defaults are **FastAPI + SQLite + a separate worker**, **text-based PDFs without OCR**, and an **RFP-to-HTML-slides sample skill**. Ownership checks apply throughout; real authentication remains deferred. SDK compatibility verification comes first in the implementation plan.
+
+The document is saved but uncommitted because this folder is not a Git repository.
+
+Do you approve the design for implementation planning, and should I initialize Git to commit it?
+
+YOUR RESPONSE
+
+design_approval: Approve design
+git_setup: Keep the design uncommitted for now
