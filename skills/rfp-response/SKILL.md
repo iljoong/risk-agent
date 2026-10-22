@@ -6,7 +6,14 @@ description: Draft an evidence-aware RFP response as HTML slides from PDF attach
 # RFP response slides
 
 Create a useful business draft, not a claim that the supplier already meets every requirement.
-Use only source documents and artifacts supplied in this conversation.
+Use source documents and artifacts supplied in this conversation for requirements and supplier evidence.
+When the user requests customer research or current external context, use `webiq_search`
+with `kind="web"` and `kind="news"`. Search only public company names and generic topics;
+never send confidential RFP text, private supplier evidence, personal data, or secrets.
+Cite returned URLs and available dates in a separate customer-context section. Public research
+is not an RFP requirement or proof of supplier compliance. Label response implications as
+suggestions, disclose partial/failed searches, and never invent citations. Crawl/update dates
+are not necessarily publication dates. In HTML slides, show source URLs as plain text, not links.
 
 ## Read sources
 

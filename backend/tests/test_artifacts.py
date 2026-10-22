@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from skill_chat.artifacts.service import validate_html
@@ -29,3 +31,26 @@ def test_passive_slides_preserve_text():
     )
     assert "Needs confirmation" in result
     assert "RFP.pdf, page 1" in result
+
+
+async def test_publisher_returns_chat_scoped_download_link(repository):
+    from test_tasks import setup_task
+
+    from skill_chat.artifacts.service import ArtifactService
+    from skill_chat.tools.artifacts import artifact_tools
+    from skill_chat.tools.context import ToolContext
+
+    scope, turn, task, tasks = setup_task(repository)
+    tasks.claim_next("worker")
+    tool = next(tool for tool in artifact_tools(repository) if tool.name == "publish_html")
+    result = json.loads(
+        await tool.handler(
+            tool.arguments.model_validate({"title": "Schedule", "html": "<p>Schedule report</p>"}),
+            ToolContext(scope, turn["id"], task["id"]),
+        )
+    )
+    assert result["download_url"] == (
+        f"/api/chats/{scope.chat_id}/artifacts/{result['artifact_id']}/download"
+    )
+    tasks.finish(scope, task["id"], "succeeded", "Saved")
+    assert ArtifactService(repository).read_html(scope, result["artifact_id"]) == "<p>Schedule report</p>"

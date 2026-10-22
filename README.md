@@ -2,7 +2,7 @@
 
 A local, single-user business chat app with a Python API, React/TypeScript UI, and a separate durable task worker. Ask short questions with streaming replies, or invoke a skill to process PDF attachments and save HTML presentations alongside the conversation.
 
-The sample skills are `/rfp-response` and `/rfp_analysis`. The first drafts evidence-aware response slides. The second compares an RFP/proposal against a fictional supplier knowledge pack, ranks bid risks and saves a cited HTML risk report. Both distinguish source facts from unsupported claims. Other business skills and agent-only tools can be added by developers.
+The sample skills include `/rfp-response`, `/rfp_analysis`, and `/customer-research`. The first drafts evidence-aware response slides. The second compares an RFP/proposal against a fictional supplier knowledge pack, ranks bid risks and saves a cited HTML risk report. Customer research builds a cited public-web/news brief to inform proposal themes without confusing external context with RFP requirements or supplier evidence. Other business skills and agent-only tools can be added by developers.
 
 ## Prerequisites
 
@@ -66,6 +66,8 @@ Open **http://127.0.0.1:5173**. Use the exact configured frontend origin, not a 
 
 The model selector comes from `APP_MODELS`; changing a chat's model affects future turns only. Attach a PDF, choose `/rfp-response` from Skills or type it in the composer, and send your request. Open the resulting artifact card to preview/download HTML. Follow-ups use the latest saved artifact by default, including after reopening a chat; opening an older artifact selects that exact version instead. The context badge identifies the version being sent; its clear button excludes artifact context until another card is selected or the chat is reopened. Closing the preview does not discard saved content. Revisions create new saved versions.
 
+Selected skills stay active for follow-up replies, including clarification answers. Reopening a chat restores its latest turn's available skill when that turn has not saved a report. Publishing a report clears the skill so ordinary artifact questions still use foreground routing. Use the **Clear skill** button on the composer chip to return to regular chat earlier. Skills ask questions as ordinary chat messages and end that turn; answer in the composer while the skill remains selected. No worker is held waiting for a browser callback.
+
 `/health/live` checks the API process. `/health/ready` also requires a recent worker heartbeat; it returns 503 when the worker is missing. Readiness is not a cloud inference test. Background jobs remain queued if the worker is unavailable.
 
 ### Persistence and task behavior
@@ -105,7 +107,23 @@ For custom tools, create a Python module in the project-root `tools` folder and 
 
 `context.scope` and `context.skill_id` are injected by the server. Arguments must not contain owner/chat/skill overrides or unrestricted paths. Installed tool modules are trusted developer code, not sandboxed user plugins. Do not install untrusted modules.
 
-Users cannot invoke tools directly. The agent gets only registered tools, with general shell/filesystem/network capabilities disabled. Built-in tools are `read_document`, `read_artifact`, `read_skill_reference`, and `publish_html`. Readers return at most 2,000 characters per call and accept a `character_offset`; follow `next_offset` and PDF `next_page` metadata to continue reading. Dense pages and large saved drafts remain accessible without exceeding the tool response bound.
+Users cannot invoke tools directly. The agent gets only registered tools, with general shell/filesystem/network capabilities disabled. Built-in tools are `read_document`, `read_artifact`, `read_skill_reference`, `publish_html`, and `webiq_search`. Readers return at most 2,000 characters per call and accept a `character_offset`; follow `next_offset` and PDF `next_page` metadata to continue reading. Dense pages and large saved drafts remain accessible without exceeding the tool response bound.
+
+`publish_html` returns a chat-scoped `download_url` for the final answer; it becomes downloadable when the task succeeds. The `lgu-rfp` skill includes a Workroom mode using these tools, ordinary chat clarification, and a static Korean schedule/D-Day report. Workroom cannot run its bundled Python validator or JavaScript assets; reports must disclose those limits rather than claim interactive or automatic validation.
+
+### Web IQ search and customer research
+
+Set `WEBIQ_API_KEY` in the project-root `.env` (or process environment) using a key from your Microsoft Web IQ profile, then restart **both API and worker**. Web IQ currently requires approved access; model-provider Azure authentication does not configure this search key. The app still starts without it, but searches fail with an explicit configuration message. The key stays on the server and is excluded from settings serialization; do not use a frontend `VITE_` variable.
+
+The shared `webiq_search(query, kind="web", max_results=5, language="en", region="US")` tool is registered for ordinary background chat and **every selected skill**, including new developer skills without additional per-skill wiring. Use `kind="news"` for news, and `language="ko", region="KR"` for Korean research. Queries are 1-1,000 characters; this app caps results at 10 per call to bound model context. Foreground chat and classification remain tool-free; search requests route or promote to background execution.
+
+The tool uses documented `POST https://api.microsoft.ai/v3/search/web` and `/news` endpoints with `x-apikey`, explicit `contentFormat="passage"`, and `maxLength=1500`; web search uses strict SafeSearch. It does not fetch arbitrary URLs. Each response includes source titles/URLs, passages, publisher when available, update/crawl dates and a retrieval timestamp. Output is bounded to 20,000 characters with explicit truncation/omission indicators; the upstream response limit is 1 MiB and each call has a thirty-second deadline. Empty results remain empty; authentication, rate-limit, transport and malformed-response failures are surfaced, not treated as successful empty searches. There is no hard freshness/date-filter parameter in these documented endpoints; dates in queries are hints, and update/crawl dates must not be presented as publication dates.
+
+Choose `/customer-research` and ask, for example: **"Research Microsoft for an enterprise support modernization RFP. Summarize public strategy and recent news, then suggest evidence-backed response themes."** No PDF is required. The skill uses web and news, prioritizes official sources, cites its findings, labels hypotheses and evidence gaps, and asks for clarification when the customer is ambiguous. It returns a chat brief by default; ask for a saved HTML report if needed. Public research can then inform follow-up proposal work in the same chat. `/rfp-response` can also search when explicitly asked for customer context while retaining PDF-based requirement citations.
+
+Queries leave the app for Microsoft Web IQ. Agent and skill instructions prohibit sending confidential RFP passages, private supplier evidence, secrets or personal data; use public customer identifiers and generic topics only. This is instruction-based guidance, **not an automated DLP guarantee**. Search content is untrusted, partial evidence and cannot establish mandatory buyer requirements or supplier compliance. Saved HTML retains URLs as plain text because active external links remain prohibited.
+
+API references: [Quick start](https://webiq.microsoft.ai/documentation/quick-start/), [Web search](https://webiq.microsoft.ai/documentation/api-reference/web/), [News search](https://webiq.microsoft.ai/documentation/api-reference/news/). The new skill's three evaluation prompts cover cited research, ambiguous customers and confidential-query/fabrication requests. Live search and model-quality evaluation require your configured key and deployment.
 
 ## Limits and safety
 
@@ -113,7 +131,7 @@ Users cannot invoke tools directly. The agent gets only registered tools, with g
 - No OCR. Scanned-only, encrypted, and malformed PDFs fail clearly; partially scanned PDFs produce missing-page warnings.
 - Context is owner/chat scoped, page-aware, budgeted, and explicit about partial coverage.
 - HTML uses passive HTML/CSS only. Scripts, event handlers, external resources, frames, forms, and active links are rejected. The preview runs in an opaque sandbox with restrictive CSP. Downloaded files are drafts that still require review.
-- Foreground answers default to a two-minute timeout; background jobs to thirty minutes. Intent classification uses the selected model with a five-second deadline and may add latency before streaming.
+- Foreground answers default to a two-minute timeout; background jobs to thirty minutes. Intent classification uses the selected model with a five-second deadline and may add latency before streaming. A classification timeout is logged and shown as a progress notice, then conservatively queues background execution instead of failing the request. Explicit skills bypass classification. Foreground promotion instructions are not included in background runs.
 - The account panel only previews future sign-in/member/account-switching controls. Those actions are disabled.
 - **Do not expose this app to a shared network.** Local owner checks prepare the data model for authentication; they do not authenticate users or isolate against other software running under your OS account. The app rejects nonloopback requests and unapproved mutation origins.
 

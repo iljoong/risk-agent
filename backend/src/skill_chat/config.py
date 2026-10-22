@@ -6,7 +6,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 class ModelChoice(BaseModel):
@@ -47,6 +47,7 @@ class Settings(BaseModel):
     pdf_page_limit: int = Field(default=500, gt=0)
     pdf_character_limit: int = Field(default=2_000_000, gt=0)
     pdf_timeout_seconds: int = Field(default=30, gt=0)
+    webiq_api_key: SecretStr | None = Field(default=None, exclude=True, repr=False)
 
     def model(self, model_id: str) -> ModelChoice | None:
         return next((choice for choice in self.models if choice.id == model_id), None)
@@ -92,6 +93,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             "project_dir": project,
             "host": source.get("APP_HOST", "127.0.0.1"),
             "frontend_origin": origin,
+            "webiq_api_key": source.get("WEBIQ_API_KEY", "").strip() or None,
             **options,
         }
     )

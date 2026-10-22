@@ -47,3 +47,13 @@ def test_config_public_choices_do_not_expose_provider_details(tmp_path):
     ]
     assert settings.default_model_id == "openai"
     assert settings.model("unknown") is None
+
+
+def test_webiq_key_is_optional_server_only_and_redacted(tmp_path):
+    settings = load_settings({
+        "APP_MODELS": json.dumps(models()), "APP_DATA_DIR": str(tmp_path),
+        "WEBIQ_API_KEY": "private-webiq-key",
+    })
+    assert settings.webiq_api_key.get_secret_value() == "private-webiq-key"
+    assert "private-webiq-key" not in repr(settings)
+    assert "private-webiq-key" not in settings.model_dump_json()

@@ -49,6 +49,7 @@ class Worker:
             request["message"],
             request.get("artifact_version_id"),
             turn["id"],
+            allow_tools=True,
         )
         self.tasks.stage(scope, task["id"], "Running skill" if task["skill_id"] else "Working on your task")
         answer = ""
@@ -69,6 +70,8 @@ class Worker:
                 self.repo.change(turns, scope, turn["id"], answer=answer)
             if event.type != "completed":
                 self.repo.add_event(scope, turn["id"], event.type, event.model_dump(exclude={"type"}))
+        if answer.strip() == "[BACKGROUND_REQUIRED]":
+            raise InvalidInput("Background task returned a routing marker instead of an answer; retry.")
         if task["skill_id"] == "rfp-response":
             with self.repo.db.engine.connect() as connection:
                 saved = connection.execute(

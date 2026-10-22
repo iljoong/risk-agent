@@ -61,7 +61,16 @@ class ChatService:
                 request.get("skill_id"),
                 request["model_id"],
             )
-        except (AppError, RuntimeError, ValueError, OSError, TimeoutError) as error:
+        except TimeoutError:
+            logger.warning("Intent classification timed out for turn %s; using background work", turn["id"])
+            self.repo.add_event(
+                scope,
+                turn["id"],
+                "stage",
+                {"text": "Request classification timed out; switching to background processing."},
+            )
+            mode = "background"
+        except (AppError, RuntimeError, ValueError, OSError) as error:
             message = (
                 str(error)
                 if isinstance(error, AppError)

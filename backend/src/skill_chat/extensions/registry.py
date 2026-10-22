@@ -119,10 +119,14 @@ def build_registry(repository) -> ExtensionRegistry:
     from skill_chat.tools.artifacts import artifact_tools
     from skill_chat.tools.documents import document_tools
     from skill_chat.tools.references import skill_reference_tools
+    from skill_chat.tools.webiq import webiq_tools
 
     root = repository.settings.project_dir
     registry = discover_extensions(root / "skills", root / "tools")
     registry.add_tools(
-        document_tools(repository) + artifact_tools(repository) + skill_reference_tools(registry)
+        document_tools(repository)
+        + artifact_tools(repository)
+        + skill_reference_tools(registry)
+        + webiq_tools(repository.settings)
     )
     return registry

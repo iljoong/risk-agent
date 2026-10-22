@@ -1,7 +1,7 @@
 ---
 name: lgu-rfp
 description: "LG U+ 공공/B2B RFP, 제안요청서, 입찰 공고문, 사전규격서와 첨부자료를 근거 기반으로 분석합니다. 사업 개요·참가자격, 일정·D-Day, 평가·배점·가격 시뮬레이션, 유불리·독소 조항·전략, 구비서류 체크리스트를 검토하거나 한국어 HTML 보고서와 평가 시뮬레이션 Excel을 생성할 때 사용합니다. Use for LG U+ RFP review, tender analysis, bid schedules, scoring, proposal strategy, and submission-document checklists."
-compatibility: "GitHub Copilot and Microsoft 365 Copilot Cowork. The host must support file reading and writing; Python 3.10+ is needed only for bundled extraction and validation scripts, and an XLSX-capable tool is needed for evaluation workbooks. Use only host-approved tools for M365 access."
+compatibility: "GitHub Copilot, Microsoft 365 Copilot Cowork, and Workroom scoped-tool mode. Full reports need file reading/writing; Workroom supports PDF inputs and passive HTML with explicit validation limits. Python 3.10+ is needed only for bundled extraction/validation scripts, and an XLSX-capable tool is needed for evaluation workbooks. Use only host-approved tools for M365 access."
 metadata:
   version: "1.1"
   workflows: rfp
@@ -9,6 +9,36 @@ metadata:
 ---
 
 # LG U+ RFP 분석
+
+## Workroom 호스트에서 실행
+
+`read_skill_reference`, `read_document`, `publish_html`만 제공되는 Workroom에서는
+아래 호스트 규칙을 적용한다. 파일/스크립트/자산 관련 일반 절차와 충돌하면 이 절을 우선한다.
+분석 범위, 포지션 선행 확인, 근거 추적, 확인 필요 표시 원칙은 그대로 유지한다.
+
+- 포지션과 참여 방식은 일반 채팅 메시지로 한 번에 한 질문만 묻고 해당 응답을 종료한다.
+  질문 도구나 입력 대기를 호출하지 않는다. 다음 사용자 메시지와 이전 대화의 답변을
+  이어서 사용한다. 이미 받은 포지션을 다시 묻거나, 두 필수 답변 전에 보고서를 만들지 않는다.
+- 참고문서는 `read_skill_reference`에 `company-profile.md`처럼 파일명만 전달한다.
+  `next_offset`이 있으면 `character_offset`으로 이어 읽는다.
+  첨부 PDF는 대화의 attachment ID와 페이지를 사용해 `read_document`로 보완한다.
+  로컬 경로를 읽거나 HWP 변환/Python 실행을 시도하지 않는다.
+- 이 호스트는 `assets` 읽기, JavaScript, 외부 링크, `data-*` 속성,
+  `<details>/<summary>`를 지원하지 않는다. 번들 CSS/JS를 읽거나 삽입하지 않고,
+  허용되는 일반 HTML과 인라인 CSS로 단일 한국어 보고서를 작성한다.
+  근거와 자기진단은 접을 수 없는 일반 `<section>`/`<div>`로 표시한다.
+- 일정 보고서는 12개 일정을 유지하되 `data-event` 대신 행의 `id`에
+  `event-notice`, `event-proposal-close`처럼 이벤트명을 기록한다.
+  D-Day는 제공된 현재 시각을 기준으로 KST 날짜 차이를 계산한 정적 값으로 표시하고,
+  기준 날짜, 마감 원문, 시간 미확인 여부를 함께 쓴다.
+  자동 갱신/상호작용을 구현하거나 검증했다고 주장하지 않는다.
+- 파일 대신 `publish_html`로 저장한다. 최종 답변의 보고서 링크는 도구가 반환한
+  `download_url`을 그대로 사용한다. 임의의 로컬 파일 경로나 산출물 ID만 링크로 쓰지 않는다.
+- 구형 번들 검증기는 JS/자산 계약이 다른 이 모드에 적용할 수 없다.
+  12개 일정, 인용, 답변 반영, 누락 경고를 수동 점검하고 결과를 구분해 보고한다.
+  도구 저장 성공은 비활성 HTML의 안전성 검사이지 날짜/출처 정확성 검증이 아니다.
+  Python 자동 검증, OCR, 전체 페이지 검토, 브라우저 상호작용을 실제 수행하지 않았다면
+  각각 미실행/부분 검토/미검증으로 표시한다. 지원하지 않는 XLSX 등은 생성했다고 하지 않는다.
 
 ## 범위와 기본값
 

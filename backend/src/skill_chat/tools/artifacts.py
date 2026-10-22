@@ -58,7 +58,14 @@ def artifact_tools(repository: Repository) -> list[ToolRegistration]:
             args.title,
             args.parent_version_id,
         )
-        return json.dumps({"artifact_id": item["id"], "version": item["version"], "status": "staged"})
+        return json.dumps(
+            {
+                "artifact_id": item["id"],
+                "version": item["version"],
+                "status": "staged",
+                "download_url": f"/api/chats/{context.scope.chat_id}/artifacts/{item['id']}/download",
+            }
+        )
 
     return [
         ToolRegistration(

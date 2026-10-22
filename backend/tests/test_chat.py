@@ -104,7 +104,32 @@ async def test_foreground_deadline_is_visible_and_preserves_partial_answer(repos
     assert saved["state"] == "failed" and saved["answer"] == "Partial"
 
 
-@pytest.mark.parametrize("result", ["foreground", "background", "invalid"])
+async def test_classifier_deadline_queues_visible_background_work(repository, tmp_path, caplog):
+    from skill_chat.tasks.worker import Worker
+
+    class SlowClassifier(QuestionGateway):
+        async def stream(self, request):
+            if "intent classifier" in request.messages[0].content:
+                await asyncio.Event().wait()
+            async for event in super().stream(request):
+                yield event
+
+    repository.settings = repository.settings.model_copy(update={"classifier_timeout_seconds": 1})
+    service, scope = service_for(repository, tmp_path, SlowClassifier())
+    receipt = await submit(service, scope)
+    assert receipt["mode"] == "background"
+    assert receipt["task_id"]
+    notices = repository.read_events(scope, receipt["turn_id"])
+    assert any(event["type"] == "stage" and "timed out" in event["data"]["text"] for event in notices)
+    assert "timed out" in caplog.text
+    worker = Worker(repository, service.registry, service.gateway)
+    await worker.run_once()
+    saved = repository.get(turns, scope, receipt["turn_id"])
+    assert saved["state"] == "succeeded"
+    assert saved["answer"] == "Answer"
+
+
+@pytest.mark.parametrize("result", ["foreground", "background", "invalid", "timeout"])
 async def test_cancellation_while_routing_cannot_be_resurrected(repository, tmp_path, result):
     class DelayedClassifier(QuestionGateway):
         def __init__(self):
@@ -115,6 +140,8 @@ async def test_cancellation_while_routing_cannot_be_resurrected(repository, tmp_
         async def stream(self, request):
             self.started.set()
             await self.resume.wait()
+            if result == "timeout":
+                raise TimeoutError
             yield AgentEvent(type="text_delta", text='{"mode":"' + result + '"}')
 
     gateway = DelayedClassifier()

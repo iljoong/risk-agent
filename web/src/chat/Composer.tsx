@@ -71,6 +71,6 @@ export function Composer({ text, onText, skills, selected, onSkill, attachments,
         {!choices.length && <p>No matching skills. Add developer skills and restart the app.</p>}
       </div>}
     </div>
-    <p className="composer-note">Drafts need your review. Check important facts against the source.</p>
+    <p className="composer-note">{selected ? 'Skill stays active for replies until a report is saved. Clear the skill to return to regular chat.' : 'Drafts need your review. Check important facts against the source.'}</p>
   </div>
 }

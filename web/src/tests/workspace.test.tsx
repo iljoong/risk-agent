@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import App from '../App'
 import { ArtifactPanel } from '../artifacts/ArtifactPanel'
+import type { Chat, TurnRequest } from '../api/types'
 
 const chat = { id: 'chat1', title: 'New chat', model_id: 'openai', turns: [], attachments: [], tasks: [], artifacts: [] }
 
@@ -86,4 +87,46 @@ it('does not put an upload from a previous chat into the current composer', asyn
   await user.click(screen.getByRole('button', { name: 'Chat B' }))
   await act(async () => { finishUpload(new Response(JSON.stringify({ id: 'pdf-a', filename: 'RFP.pdf', state: 'pending', warnings: [] }))) })
   expect(screen.queryByText('RFP.pdf')).not.toBeInTheDocument()
+})
+
+it('keeps a slash-selected skill for clarification replies until explicitly cleared', async () => {
+  const original = fetch
+  const saved: Chat = { ...chat, title: 'Clarification flow' }
+  const requests: TurnRequest[] = []
+  vi.stubGlobal('fetch', vi.fn(async (input: string, options?: RequestInit) => {
+    if (input === '/api/chats/chat1/turns' && options?.body) {
+      const request: TurnRequest = JSON.parse(String(options.body))
+      requests.push(request)
+      saved.turns = [...saved.turns, {
+        id: `turn-${requests.length}`, request, state: 'succeeded', mode: 'background',
+        answer: 'How will you participate?', error: null,
+      }]
+      return new Response(JSON.stringify({
+        turn_id: `turn-${requests.length}`, mode: 'background', task_id: 'task1', events_url: '',
+      }))
+    }
+    if (input === '/api/chats' && options?.method !== 'POST') return new Response(JSON.stringify([saved]))
+    if (input === '/api/chats/chat1') return new Response(JSON.stringify(saved))
+    return original(input, options)
+  }))
+  const user = userEvent.setup()
+  render(<App />)
+  await screen.findByRole('option', { name: 'Foundry OpenAI' })
+  await user.type(screen.getByRole('textbox', { name: 'Message' }), '/rfp-response Ask before analyzing.')
+  await user.click(screen.getByRole('button', { name: 'Send message' }))
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue(''))
+  expect(screen.getByRole('button', { name: 'Clear skill' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'New chat' }))
+  await user.click(screen.getByRole('button', { name: 'Clarification flow' }))
+  await screen.findByRole('button', { name: 'Clear skill' })
+  await user.type(screen.getByRole('textbox', { name: 'Message' }), 'Bidding alone.')
+  await user.click(screen.getByRole('button', { name: 'Send message' }))
+  await waitFor(() => expect(requests).toHaveLength(2))
+  expect(requests[1].skill_id).toBe('rfp-response')
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue(''))
+  await user.click(screen.getByRole('button', { name: 'Clear skill' }))
+  await user.type(screen.getByRole('textbox', { name: 'Message' }), 'What is an RFP?')
+  await user.click(screen.getByRole('button', { name: 'Send message' }))
+  await waitFor(() => expect(requests).toHaveLength(3))
+  expect(requests[2].skill_id).toBeNull()
 })

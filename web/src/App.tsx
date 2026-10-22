@@ -29,6 +29,7 @@ export default function App() {
   const [sidebar, setSidebar] = useState(window.innerWidth > 800)
   const [account, setAccount] = useState(false)
   const current = useRef<string | null>(null)
+  const skillTurn = useRef<string | null>(null)
   const active = chat?.turns.find(turn => isActive(turn.state))
   const chatId = chat?.id
   const activeTurnId = active?.id
@@ -43,6 +44,19 @@ export default function App() {
     }).catch(report)
     return () => { cancelled = true }
   }, [report])
+
+  useEffect(() => {
+    const turn = skillTurn.current
+    if (turn && chat?.artifacts.some(item => item.turn_id === turn)) {
+      skillTurn.current = null
+      setSkill(null)
+    }
+  }, [chat])
+
+  function chooseSkill(selected: Skill | null) {
+    skillTurn.current = null
+    setSkill(selected)
+  }
 
   const refresh = useCallback(async (id: string) => {
     const saved = await api.chat(id)
@@ -78,11 +92,16 @@ export default function App() {
   }, [chatId, activeTurnId, refresh, report])
 
   async function openChat(id: string) {
-    current.current = id; setError(''); setArtifact(null); setContextCleared(false); setFiles([]); setSkill(null); setText(''); setChat(null)
+    current.current = id; skillTurn.current = null; setError(''); setArtifact(null); setContextCleared(false); setFiles([]); setSkill(null); setText(''); setChat(null)
     try {
       const saved = await api.chat(id)
       if (current.current !== id) return
       setChat(saved); setModel(saved.model_id)
+      const latest = saved.turns.at(-1)
+      const completedReport = latest && saved.artifacts.some(item => item.turn_id === latest.id)
+      const selected = completedReport ? null : skills.find(item => item.id === latest?.request.skill_id) ?? null
+      skillTurn.current = selected && latest ? latest.id : null
+      setSkill(selected)
       if (window.innerWidth < 800) setSidebar(false)
     } catch (cause) { report(cause) }
   }
@@ -98,13 +117,16 @@ export default function App() {
     setSending(true); setError('')
     try {
       const id = await ensureChat()
-      await api.send(id, {
+      const receipt = await api.send(id, {
         client_request_id: crypto.randomUUID(), message, model_id: model,
         skill_id: selected?.id ?? null, attachment_ids: files.map(file => file.id),
         artifact_version_id: contextArtifact?.id ?? null,
       })
       if (chat?.title === 'New chat' || !chat) await api.patch(id, { title: message.slice(0, 60) })
-      setText(''); setFiles([]); setSkill(null); setStatus('')
+      if (current.current === id) {
+        skillTurn.current = selected ? receipt.turn_id : null
+        setText(''); setFiles([]); setSkill(selected); setStatus('')
+      }
       await refresh(id)
     } catch (cause) { report(cause); if (current.current) await refresh(current.current).catch(report) }
     finally { setSending(false) }
@@ -125,7 +147,22 @@ export default function App() {
       setModel(id)
     } catch (cause) { report(cause) }
   }
-  const newChat = () => { current.current = null; setChat(null); setText(''); setSkill(null); setFiles([]); setArtifact(null); setContextCleared(false); setError('') }
+  async function retryTask(taskId: string) {
+    if (!chat) return
+    const id = chat.id
+    const original = chat.tasks.find(item => item.id === taskId)
+    const skillId = chat.turns.find(turn => turn.id === original?.turn_id)?.request.skill_id
+    const selected = skills.find(item => item.id === skillId) ?? null
+    try {
+      const retried = await api.retry(id, taskId)
+      if (current.current === id) {
+        skillTurn.current = selected ? retried.turn_id : null
+        setSkill(selected)
+      }
+      await refresh(id)
+    } catch (cause) { report(cause) }
+  }
+  const newChat = () => { current.current = null; skillTurn.current = null; setChat(null); setText(''); setSkill(null); setFiles([]); setArtifact(null); setContextCleared(false); setError('') }
   return <div className={`app-shell ${sidebar ? 'with-sidebar' : ''}`}>
     <ChatSidebar chats={history} current={chat?.id ?? null} open={sidebar} onNew={newChat} onOpen={id => { void openChat(id) }}
       onClose={() => setSidebar(false)} onAccount={() => setAccount(true)}
@@ -140,13 +177,13 @@ export default function App() {
       </header>
       {error && <div className="error-banner" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
       <div className="conversation-scroll">
-        <ChatView chat={chat} status={status} skills={skills} onStarter={(message, chosen) => { setText(message); setSkill(chosen) }}
+        <ChatView chat={chat} status={status} skills={skills} onStarter={(message, chosen) => { setText(message); chooseSkill(chosen) }}
           onStop={turn => { if (chat) void api.cancel(chat.id, turn).then(() => refresh(chat.id)).catch(report) }}
-          onRetry={task => { if (chat) void api.retry(chat.id, task).then(() => refresh(chat.id)).catch(report) }}
+          onRetry={task => { void retryTask(task) }}
           onArtifact={selected => { setArtifact(selected); setContextCleared(false) }} />
       </div>
       {contextArtifact && <div className="context-selection"><FileText size={14} />Using {contextArtifact.title}, Version {contextArtifact.version} as context<button aria-label="Clear artifact context" onClick={() => setContextCleared(true)}><X size={13} /></button></div>}
-      <Composer text={text} onText={setText} skills={skills} selected={skill} onSkill={setSkill} attachments={files}
+      <Composer text={text} onText={setText} skills={skills} selected={skill} onSkill={chooseSkill} attachments={files}
         onRemove={id => setFiles(files.filter(file => file.id !== id))} onFiles={attach} onSend={send}
         disabled={Boolean(active) || sending || !models.length} onError={setError} />
     </main>

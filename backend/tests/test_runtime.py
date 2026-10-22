@@ -16,7 +16,9 @@ from skill_chat.contracts import AgentRequest, ContextMessage, Scope, Unavailabl
 
 
 @contextmanager
-def local_model(call_tool=False, reject_auth=False, reference_file=None, skill_id="rfp-response"):
+def local_model(
+    call_tool=False, reject_auth=False, reference_file=None, skill_id="rfp-response", search=False
+):
     received = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -51,6 +53,29 @@ def local_model(call_tool=False, reject_auth=False, reference_file=None, skill_i
                 for call in message.get("tool_calls", [])
             }
             names = {tool.get("function", {}).get("name") for tool in body.get("tools", [])}
+            search_calls = [
+                call
+                for message in body["messages"]
+                for call in message.get("tool_calls", [])
+                if call.get("function", {}).get("name") == "webiq_search"
+            ]
+            if search and "webiq_search" in names and len(search_calls) < 2:
+                kind = "web" if not search_calls else "news"
+                delta = {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "index": 0,
+                            "id": f"local-search-{kind}",
+                            "type": "function",
+                            "function": {
+                                "name": "webiq_search",
+                                "arguments": json.dumps({"query": "Example public strategy", "kind": kind}),
+                            },
+                        }
+                    ],
+                }
+                finish = "tool_calls"
             if call_tool and "publish_html" in names and "publish_html" not in called:
                 if reference_file and "read_skill_reference" not in called:
                     name = "read_skill_reference"
@@ -150,6 +175,89 @@ async def test_gateway_stops_its_native_client_after_each_turn(settings, monkeyp
             await gateway.close()
             for client in clients:
                 await client.stop()
+
+
+@pytest.mark.runtime
+@pytest.mark.skipif(
+    os.environ.get("APP_RUN_RUNTIME_TESTS") != "1", reason="Opt-in local SDK/CLI process integration"
+)
+@pytest.mark.parametrize("skill_id", [None, "customer-research"])
+async def test_real_runtime_searches_web_and_news_in_plain_chat_and_skill(
+    repository, settings, monkeypatch, skill_id
+):
+    import httpx
+    from pydantic import SecretStr
+
+    from skill_chat.extensions.registry import build_registry
+    from skill_chat.tasks.service import TaskService
+    from skill_chat.tasks.worker import Worker
+
+    settings.webiq_api_key = SecretStr("local-search-key")
+    real_client = httpx.AsyncClient
+    searched = []
+
+    def respond(request):
+        kind = request.url.path.rsplit("/", 1)[-1]
+        searched.append(kind)
+        return httpx.Response(
+            200,
+            json={
+                f"{kind}Results": [
+                    {
+                        "title": "Public customer strategy",
+                        "url": "https://example.com/strategy",
+                        "content": f"Verified {kind} research passage.",
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(
+        "skill_chat.tools.webiq.httpx.AsyncClient",
+        lambda **kwargs: real_client(**kwargs, transport=httpx.MockTransport(respond)),
+    )
+    registry = build_registry(repository)
+    chat = repository.create_chat("runtime-search", "openai")
+    scope = Scope("runtime-search", chat["id"])
+    turn, _ = repository.create_turn(
+        scope,
+        {
+            "client_request_id": uuid4().hex,
+            "message": "Research Example customer strategy and news.",
+            "model_id": "openai",
+            "skill_id": skill_id,
+            "attachment_ids": [],
+        },
+    )
+    tasks = TaskService(repository)
+    task = tasks.enqueue(scope, turn["id"], "openai", skill_id, registry.fingerprint)
+    with local_model(search=True) as (port, requests):
+
+        def provider(model, acquire):
+            result = build_provider(model, acquire)
+            result["base_url"] = f"http://127.0.0.1:{port}/v1"
+            result["wire_api"] = "completions"
+            return result
+
+        monkeypatch.setattr("skill_chat.agents.gateway.build_provider", provider)
+        gateway = AgentGateway(settings, registry)
+
+        async def token():
+            return "local-token"
+
+        monkeypatch.setattr(gateway.credentials, "provider", lambda scope: token)
+        try:
+            await Worker(repository, registry, gateway).run_once()
+            saved = tasks.get(scope, task["id"])
+            assert saved["state"] == "succeeded", saved["error"]
+            assert searched == ["web", "news"]
+            tool_results = [m for body in requests for m in body["messages"] if m.get("role") == "tool"]
+            assert "Verified web research passage." in json.dumps(tool_results)
+            assert "Verified news research passage." in json.dumps(tool_results)
+            if skill_id:
+                assert "Customer research brief" in json.dumps(requests[0])
+        finally:
+            await gateway.close()
 
 
 @pytest.mark.runtime

@@ -99,3 +99,15 @@ async def test_rfp_skill_requires_a_processed_pdf_before_inference(repository):
     await Worker(repository, registry, gateway).run_once()
     assert "Attach at least one" in tasks.get(scope, task["id"])["error"]
     assert gateway.executions == 0
+
+
+async def test_background_routing_marker_is_not_a_successful_answer(repository, tmp_path):
+    from test_chat import QuestionGateway, service_for, submit
+
+    gateway = QuestionGateway(classification='{"mode":"background"}', answer="[BACKGROUND_REQUIRED]")
+    service, scope = service_for(repository, tmp_path, gateway)
+    receipt = await submit(service, scope)
+    await Worker(repository, service.registry, gateway).run_once()
+    saved = repository.get(turns, scope, receipt["turn_id"])
+    assert saved["state"] == "failed"
+    assert "routing marker" in saved["error"].lower()
