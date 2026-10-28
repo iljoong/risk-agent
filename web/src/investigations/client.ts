@@ -1,5 +1,5 @@
 import { API_BASE } from '../api/client'
-import type { InvestigationAction, RevisionRecord, StateEnvelope } from './types'
+import type { Alert, InvestigationAction, RevisionRecord, StateEnvelope } from './types'
 
 export class InvestigationError extends Error {
   readonly status: number
@@ -16,6 +16,10 @@ async function request<T>(path: string, body?: unknown, signal?: AbortSignal): P
   return response.json()
 }
 export const investigations = {
+  alerts: () => request<{ alerts: Alert[] }>('/api/alerts').then(data => data.alerts),
+  openAlert: (alert: string, model_id: string, client_request_id: string) =>
+    request<{ chat_id: string; revision: number; created: boolean }>(
+      `/api/alerts/${encodeURIComponent(alert)}/investigation`, { model_id, client_request_id }),
   create: (model_id: string, client_request_id: string) =>
     request<{ chat_id: string; revision: number }>('/api/investigations', { model_id, client_request_id }),
   get: (chat: string, signal?: AbortSignal) => request<StateEnvelope>(`/api/chats/${chat}/investigation`, undefined, signal),

@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Protocol
 
 from skill_chat.contracts import InvalidInput
-from skill_chat.investigations.fixtures import EVIDENCE, SOURCES
+from skill_chat.investigations.fixtures import ALERTS, EVIDENCE, SOURCES
 
 
 class InvestigationConnector(Protocol):
@@ -28,6 +28,30 @@ async def collect_sources(service, scope, task, connector, tasks):
 
     turn = service.repo.get(turns, scope, task["turn_id"])
     context = turn["request"]["investigation"]
+    alert_id = context["snapshot"]["original_alert"]["id"]
+    if any(item["id"] == alert_id and item["evidence"] == "none" for item in ALERTS):
+        gap = "No demonstration records are packaged for this alert."
+        service.stage_candidate(scope, task["id"], context["base_revision"], {
+            "sources": [{
+                "source_id": "SRC-00", "title": f"Demonstration records for {alert_id}", "status": "missing",
+                "snapshot_at": None, "version": None, "connector": "demo", "fictional": True,
+                "retrieved_at": datetime.now(UTC).isoformat(),
+                "coverage": f"{gap} Nothing was retrieved; infer no adverse or exculpatory content.", "data": {},
+            }],
+            "transactions": [],
+            "evidence": [{"id": "GAP-01", "kind": "Missing information", "title": "No demonstration records",
+                          "source_ids": ["SRC-00"], "locators": [alert_id], "text": gap}],
+            "calculations": {}, "prepared": True,
+            "output_updates": {
+                "gather_evidence": {"text": f"{gap} GAP-01: evidence not collected.", "evidence_ids": ["GAP-01"]},
+                "analyze": {"text": "No evidence is available to support or contradict the alert [GAP-01]. "
+                                    "No finding can be drawn; obtain source records before any assessment.",
+                            "evidence_ids": ["GAP-01"]},
+            },
+        })
+        tasks.finish(scope, task["id"], "succeeded",
+                     "Preparation completed. No demonstration records are packaged for this alert.")
+        return
     sources = []
     for source_id in SOURCES:
         tasks.stage(scope, task["id"], f"Demo connector: retrieving {source_id}")

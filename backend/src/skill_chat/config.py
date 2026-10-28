@@ -6,7 +6,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 
 class ModelChoice(BaseModel):
@@ -40,6 +40,7 @@ class Settings(BaseModel):
     project_dir: Path
     host: Literal["127.0.0.1", "localhost", "::1"] = "127.0.0.1"
     frontend_origin: str = "http://127.0.0.1:5173"
+    remote_frontend_origin: str | None = None
     upload_limit_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
     foreground_timeout_seconds: int = Field(default=120, gt=0)
     background_timeout_seconds: int = Field(default=1800, gt=0)
@@ -48,6 +49,28 @@ class Settings(BaseModel):
     pdf_character_limit: int = Field(default=2_000_000, gt=0)
     pdf_timeout_seconds: int = Field(default=30, gt=0)
     webiq_api_key: SecretStr | None = Field(default=None, exclude=True, repr=False)
+
+    @field_validator("remote_frontend_origin")
+    @classmethod
+    def validate_remote_frontend_origin(cls, origin: str | None) -> str | None:
+        if origin is None:
+            return None
+        url = urlparse(origin)
+        if (
+            url.scheme not in {"http", "https"}
+            or not url.hostname
+            or "*" in url.hostname
+            or url.username is not None
+            or url.password is not None
+            or url.path not in {"", "/"}
+            or "?" in origin
+            or "#" in origin
+            or any(character.isspace() for character in origin)
+        ):
+            raise ValueError("Remote frontend must be an exact HTTP(S) origin without credentials or paths")
+        if url.port is not None and url.port == 0:
+            raise ValueError("Remote frontend port must be positive")
+        return origin.rstrip("/")
 
     def model(self, model_id: str) -> ModelChoice | None:
         return next((choice for choice in self.models if choice.id == model_id), None)
@@ -93,6 +116,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             "project_dir": project,
             "host": source.get("APP_HOST", "127.0.0.1"),
             "frontend_origin": origin,
+            "remote_frontend_origin": source.get("APP_REMOTE_FRONTEND_ORIGIN") or None,
             "webiq_api_key": source.get("WEBIQ_API_KEY", "").strip() or None,
             **options,
         }

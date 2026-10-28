@@ -44,12 +44,15 @@ def create_app(
                 await actual_gateway.close()
             repo.db.engine.dispose()
 
-    app = FastAPI(title="Workroom API", lifespan=lifespan)
+    app = FastAPI(title="RCI Agent API", lifespan=lifespan)
     app.state.service = chat
     app.state.owner_resolver = owner_resolver or (lambda _request: "local")
+    frontend_origins = [settings.frontend_origin]
+    if settings.remote_frontend_origin:
+        frontend_origins.append(settings.remote_frontend_origin)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_origin],
+        allow_origins=frontend_origins,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["content-type", "last-event-id"],
     )
@@ -68,7 +71,7 @@ def create_app(
         origin = request.headers.get("origin")
         if request.method not in {"GET", "HEAD", "OPTIONS"} and (
             origin is not None
-            and origin != settings.frontend_origin
+            and origin not in frontend_origins
             or request.headers.get("sec-fetch-site") == "cross-site"
         ):
             return JSONResponse(

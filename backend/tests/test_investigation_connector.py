@@ -45,6 +45,22 @@ async def test_demo_preparation_publishes_calculations_and_preserves_gaps(reposi
     assert repository.get(turns, scope, receipt["turn_id"])["state"] == "succeeded"
 
 
+async def test_alert_without_demo_records_prepares_an_explicit_source_gap(repository):
+    from skill_chat.investigations.service import InvestigationService
+
+    service = InvestigationService(repository)
+    opened = service.open_alert("a", "openai", "ALT-2036", "open-quayside")
+    scope = Scope("a", opened["chat_id"])
+    registry = build_registry(repository)
+    prepare(service, scope, registry)
+    await Worker(repository, registry, NoInference()).run_once()
+    state = service.get(scope)
+    assert state["prepared"] and not state["transactions"]
+    assert [source["status"] for source in state["sources"]] == ["missing"]
+    assert state["evidence"][0]["kind"] == "Missing information"
+    assert "No finding can be drawn" in state["outputs"]["analyze"]["text"]
+
+
 async def test_preparation_is_idempotent_and_blocks_conflicting_edits(repository):
     service, scope = create_investigation(repository)
     registry = build_registry(repository)

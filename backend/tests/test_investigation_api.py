@@ -15,6 +15,21 @@ def client(settings):
         yield client
 
 
+def test_alert_routes_list_open_resume_and_reject_unknown(client):
+    listed = client.get("/api/alerts").json()["alerts"]
+    assert [item["id"] for item in listed][0] == "ALT-2041" and listed[0]["chat_id"] is None
+    body = {"model_id": "openai", "client_request_id": "open-a"}
+    opened = client.post("/api/alerts/ALT-2041/investigation", json=body)
+    assert opened.status_code == 201 and opened.json()["created"]
+    resumed = client.post("/api/alerts/ALT-2041/investigation", json={**body, "client_request_id": "open-b"})
+    assert resumed.status_code == 200 and resumed.json()["chat_id"] == opened.json()["chat_id"]
+    assert client.get("/api/alerts").json()["alerts"][0]["chat_id"] == opened.json()["chat_id"]
+    assert client.get("/api/alerts", headers={"x-owner": "b"}).json()["alerts"][0]["chat_id"] is None
+    assert client.post("/api/alerts/ALT-0/investigation", json=body).status_code == 404
+    assert client.post("/api/alerts/ALT-2041/investigation", json=body,
+                       headers={"origin": "https://evil.example"}).status_code == 403
+
+
 def test_investigation_routes_create_amend_and_enforce_origin_and_scope(client):
     response = client.post("/api/investigations", json={"model_id": "openai", "client_request_id": "create"})
     assert response.status_code == 201

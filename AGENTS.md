@@ -2,7 +2,8 @@
 
 ## Start here
 
-Workroom is a local, single-user business chat application: a Python/FastAPI API,
+RCI (Risk and Compliance Intelligent) Agent is a local, single-user general agent
+application with a finance focus: a Python/FastAPI API,
 a separate durable task worker, and a React/TypeScript frontend. Preserve this
 deployment model unless the requested change explicitly replaces it.
 
@@ -11,10 +12,12 @@ extensions. It is the operational source for installation, running the three
 processes, troubleshooting, and verification. Use Windows PowerShell commands
 from the repository root and the root `.venv` for Python.
 
-For architectural rationale, consult
-`docs\superpowers\specs\2026-10-21-business-skill-chat-design.md` and the companion
-plan in `docs\superpowers\plans`. These are historical design/execution records;
-check their claims against current code and tests before relying on them.
+For product scope and architecture, consult
+`docs\superpowers\specs\2026-10-27-rci-agent-design.md` and the companion
+`docs\superpowers\plans\2026-10-27-rci-agent-transition.md`.
+Finance is the intended domain, but the specific anomaly-triage workflow is
+deferred. Do not assume a risk subtype, scoring model, case schema, or regulatory
+workflow, or describe those capabilities as implemented.
 
 The explicitly approved fictional investigation demo is specified in
 `docs\superpowers\specs\2026-10-28-investigation-evidence-desk-design.md`.
@@ -26,6 +29,7 @@ It does not establish a live detector, financial integration or regulatory workf
 | --- | --- |
 | HTTP routes, request/response validation, local access guards | `backend\src\skill_chat\api` |
 | Routing, foreground streaming, promotion to durable execution | `backend\src\skill_chat\chat` |
+| Investigation domain commands, demo sources, review state and AG-UI/A2UI projection | `backend\src\skill_chat\investigations`, `web\src\investigations` |
 | Queue lifecycle, cancellation, recovery, worker execution | `backend\src\skill_chat\tasks` |
 | Copilot SDK bridge, provider configuration, Azure credentials | `backend\src\skill_chat\agents` |
 | SQLite schema, migrations, scoped records and managed files | `backend\src\skill_chat\storage` |
@@ -33,7 +37,6 @@ It does not establish a live detector, financial integration or regulatory workf
 | HTML validation, publication and versioning | `backend\src\skill_chat\artifacts` |
 | Skill discovery and agent-only tool registration | `backend\src\skill_chat\extensions`, `backend\src\skill_chat\tools` |
 | UI and browser API/SSE contracts | `web\src`, especially `web\src\api` |
-| Investigation domain commands, demo sources, review state and AG-UI/A2UI projection | `backend\src\skill_chat\investigations`, `web\src\investigations` |
 | Developer-installed skill instructions, references and evaluations | `skills` |
 
 Keep API adapters thin and reuse the existing services and repository. Shared
@@ -71,17 +74,17 @@ client/decoder, consumers, and focused tests together.
   task/event failures. Keep credentials server-side and out of logs, browser
   settings, and committed files. Web search queries leave the app; retain the
   public-query guidance without claiming automated DLP protection.
+- **Investigation demo:** preserve fictional labels, source gaps, immutable original
+  alert priority and unconfirmed external status. Apply edits through revisioned
+  scoped commands; publish staged agent output only on success. A2UI is a fixed,
+  bounded host-requested scope form, not arbitrary agent-authored HTML or actions.
 
 ## Extensions and dependencies
 
 Before editing a skill, read its `SKILL.md` and relevant bundled references.
 Frontmatter names must match directory names; the discovered identifier is
-authoritative. For example, the risk-analysis skill is `rfp-analysis`, not
-`rfp_analysis`. Preserve synthetic-data labels and source/evidence distinctions.
-- **Investigation demo:** preserve fictional labels, source gaps, immutable original
-  alert priority and unconfirmed external status. Apply edits through revisioned
-  scoped commands; publish staged agent output only on success. A2UI is a fixed,
-  bounded host-requested scope form, not arbitrary agent-authored HTML or actions.
+authoritative. Keep extensions optional; ordinary chat must not depend on a
+particular skill. Preserve synthetic-data labels and source/evidence distinctions.
 Update that skill's evaluation prompts when its expected behavior changes.
 
 Follow `README.md` and `backend\src\skill_chat\tools\context.py` for new tool

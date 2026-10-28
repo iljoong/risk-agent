@@ -54,6 +54,42 @@ def test_cross_owner_and_origin_are_rejected(client):
     assert client.post("/api/chats", json={"owner_id": "b"}).status_code == 422
 
 
+def test_remote_origin_is_rejected_by_default(client):
+    chat = new_chat(client)
+    response = client.delete(
+        f"/api/chats/{chat}", headers={"origin": "http://203.0.113.10:5173"}
+    )
+    assert response.status_code == 403
+    assert client.get(f"/api/chats/{chat}").status_code == 200
+
+
+def test_opt_in_remote_origin_can_delete_history_but_other_origins_cannot(settings):
+    origin = "http://203.0.113.10:5173"
+    app = create_app(
+        settings.model_copy(update={"remote_frontend_origin": origin}), AnswerGateway()
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/chats", json={"model_id": "openai"}, headers={"origin": origin}
+        )
+        assert response.status_code == 201
+        assert response.headers["access-control-allow-origin"] == origin
+        path = f"/api/chats/{response.json()['id']}"
+        for headers in (
+            {"origin": "http://203.0.113.10:5174"},
+            {"origin": "https://evil.example"},
+            {"origin": origin, "sec-fetch-site": "cross-site"},
+        ):
+            assert client.delete(path, headers=headers).status_code == 403
+        assert client.get(path).status_code == 200
+        assert client.delete(path, headers={"origin": origin}).status_code == 204
+        assert client.get(path).status_code == 404
+        local_chat = new_chat(client)
+        assert client.delete(
+            f"/api/chats/{local_chat}", headers={"origin": "http://127.0.0.1:5173"}
+        ).status_code == 204
+
+
 def test_pdf_submission_is_queued_and_busy_chat_returns_conflict(client):
     chat = new_chat(client)
     attached = client.post(

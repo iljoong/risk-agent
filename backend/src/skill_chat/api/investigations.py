@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from skill_chat.api.dependencies import scope, service
@@ -21,6 +21,22 @@ def create_investigation(body: CreateInvestigation, request: Request):
         request.app.state.owner_resolver(request),
         body.model_id or repo.settings.default_model_id, body.client_request_id,
     )
+
+
+@router.get("/api/alerts")
+def alerts(request: Request):
+    return {"alerts": InvestigationService(service(request).repo).alerts(request.app.state.owner_resolver(request))}
+
+
+@router.post("/api/alerts/{alert_id}/investigation")
+def open_alert(alert_id: str, body: CreateInvestigation, request: Request, response: Response):
+    repo = service(request).repo
+    result = InvestigationService(repo).open_alert(
+        request.app.state.owner_resolver(request),
+        body.model_id or repo.settings.default_model_id, alert_id, body.client_request_id,
+    )
+    response.status_code = 201 if result["created"] else 200
+    return result
 
 
 @router.get("/api/chats/{chat_id}/investigation")

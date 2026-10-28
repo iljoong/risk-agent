@@ -19,6 +19,34 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
+it('resizes the session rail with keyboard controls while retaining the message draft', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await screen.findByRole('option', { name: 'Foundry OpenAI' })
+  await user.type(screen.getByRole('textbox', { name: 'Message' }), 'Pending investigation question')
+  const resize = screen.getByRole('separator', { name: 'Resize session sidebar' })
+  const width = Number(resize.getAttribute('aria-valuenow'))
+  fireEvent.keyDown(resize, { key: 'ArrowRight' })
+  expect(Number(resize.getAttribute('aria-valuenow'))).toBeGreaterThan(width)
+  fireEvent.keyDown(resize, { key: 'Home' })
+  expect(resize).toHaveAttribute('aria-valuenow', '180')
+  expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue('Pending investigation question')
+})
+
+it.each([
+  ['Review a document', 'Summarize the attached PDF, cite the relevant pages, and list gaps or questions for review.'],
+  ['Explore a question', 'Help me explore a finance question. Ask what context and evidence you need before drawing conclusions.'],
+])('starts ordinary chat from %s without retaining a selected skill', async (label, prompt) => {
+  const user = userEvent.setup()
+  render(<App />)
+  await screen.findByRole('option', { name: 'Foundry OpenAI' })
+  await user.click(screen.getByRole('button', { name: 'Choose a skill' }))
+  await user.click(screen.getByRole('option', { name: /rfp-response/ }))
+  await user.click(screen.getByRole('button', { name: new RegExp(label) }))
+  expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue(prompt)
+  expect(screen.queryByRole('button', { name: 'Clear skill' })).not.toBeInTheDocument()
+})
+
 it('offers skills in the composer and clearly disables future account actions', async () => {
   const user = userEvent.setup()
   render(<App />)
@@ -29,6 +57,18 @@ it('offers skills in the composer and clearly disables future account actions', 
   await user.click(screen.getByRole('button', { name: 'Account & access' }))
   expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Manage members' })).toBeDisabled()
+})
+
+it.each(['button', 'slash'])('shows only skill names in the %s selection popup', async entry => {
+  const user = userEvent.setup()
+  render(<App />)
+  await screen.findByRole('option', { name: 'Foundry OpenAI' })
+  if (entry === 'button') await user.click(screen.getByRole('button', { name: 'Choose a skill' }))
+  else await user.type(screen.getByRole('textbox', { name: 'Message' }), '/rfp')
+  expect(screen.queryByText('Draft RFP slides')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('option', { name: 'rfp-response' }))
+  expect(screen.getByText('/rfp-response')).toBeInTheDocument()
+  expect(screen.queryByRole('listbox', { name: 'Available skills' })).not.toBeInTheDocument()
 })
 
 it('shows a PDF-only error instead of uploading another format', async () => {
@@ -44,7 +84,7 @@ it('keeps generated HTML in an opaque sandbox rather than the app DOM', () => {
   render(<ArtifactPanel chatId="chat1" artifact={{
     id: 'artifact1', title: 'Response', version: 1, text_content: 'draft', parent_version_id: null,
   }} onClose={() => {}} />)
-  expect(screen.getByTitle('HTML slide preview')).toHaveAttribute('sandbox', '')
+  expect(screen.getByTitle('HTML artifact preview')).toHaveAttribute('sandbox', '')
 })
 
 it('allows clearing automatic artifact context before sending a question', async () => {

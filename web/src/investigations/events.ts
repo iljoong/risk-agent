@@ -36,7 +36,7 @@ const outputSchema = z.object({ text: z.string().max(12000), version: z.number()
   evidence_ids: z.array(z.string()), needs_review: z.boolean() })
 const snapshotSchema = z.object({
   chat_id: z.string(), case_id: z.string(), connector: z.literal('demo'), revision: z.number().int().positive(),
-  current_stage: z.enum(stages), original_alert: z.object({ id: z.string(), priority: z.string(), trigger: z.string() }),
+  current_stage: z.enum(stages), original_alert: z.object({ id: z.string(), priority: z.string(), trigger: z.string(), question: z.string().optional() }),
   shared_facts: z.object({ beneficiary_description: z.string() }),
   outputs: z.record(z.enum(stages), outputSchema),
   review: z.object({ reviewed: z.boolean(), rationale: z.string(), prepared_note: z.string().nullable() }),

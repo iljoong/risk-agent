@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { FileText, PanelLeft, PanelRight, X } from 'lucide-react'
 import { api } from './api/client'
 import { subscribeTurn } from './api/events'
@@ -10,10 +11,12 @@ import { Composer } from './chat/Composer'
 import { ModelPicker } from './chat/ModelPicker'
 import { ArtifactPanel } from './artifacts/ArtifactPanel'
 import { AccountDialog } from './account/AccountDialog'
+import { ThemeToggle } from './ThemeToggle'
+import { SidebarResize } from './SidebarResize'
 import { InvestigationWorkbench } from './investigations/InvestigationWorkbench'
 import { investigations, InvestigationError } from './investigations/client'
 import { subscribeInvestigation, validateInvestigation } from './investigations/events'
-import type { Investigation, InvestigationAction } from './investigations/types'
+import type { Alert, Investigation, InvestigationAction } from './investigations/types'
 import './styles.css'
 
 const CenteredChatPrototype = import.meta.env.DEV
@@ -34,12 +37,15 @@ export default function App() {
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [sending, setSending] = useState(false)
-  const [sidebar, setSidebar] = useState(window.innerWidth > 800)
+  const [sidebar, setSidebar] = useState(window.innerWidth > 1000)
+  const [sessionWidth, setSessionWidth] = useState(248)
   const [account, setAccount] = useState(false)
   const [investigation, setInvestigation] = useState<Investigation | null>(null)
   const [mutating, setMutating] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [alerts, setAlerts] = useState<Alert[]>([])
   const creationRequest = useRef<string | null>(null)
+  const alertRequest = useRef<{ alert: string; id: string } | null>(null)
   const current = useRef<string | null>(null)
   const skillTurn = useRef<string | null>(null)
   const active = chat?.turns.find(turn => isActive(turn.state))
@@ -57,6 +63,12 @@ export default function App() {
     }).catch(report)
     return () => { cancelled = true }
   }, [report])
+
+  useEffect(() => {
+    let cancelled = false
+    investigations.alerts().then(items => { if (!cancelled) setAlerts(items) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [history])
 
   useEffect(() => {
     const turn = skillTurn.current
@@ -142,7 +154,7 @@ export default function App() {
       const selected = completedReport ? null : skills.find(item => item.id === latest?.request.skill_id) ?? null
       skillTurn.current = selected && latest ? latest.id : null
       setSkill(selected)
-      if (window.innerWidth < 800) setSidebar(false)
+      if (window.innerWidth <= 1000) setSidebar(false)
     } catch (cause) { report(cause) }
   }
   async function ensureChat() {
@@ -214,6 +226,19 @@ export default function App() {
     } catch (cause) { report(cause) }
     finally { setCreating(false) }
   }
+  async function openAlert(alert: Alert) {
+    if (!model || creating) return
+    if (alert.chat_id) { await openChat(alert.chat_id); return }
+    setCreating(true); setError('')
+    if (alertRequest.current?.alert !== alert.id) alertRequest.current = { alert: alert.id, id: crypto.randomUUID() }
+    try {
+      const opened = await investigations.openAlert(alert.id, model, alertRequest.current.id)
+      alertRequest.current = null
+      await openChat(opened.chat_id)
+      setHistory(await api.chats())
+    } catch (cause) { report(cause) }
+    finally { setCreating(false) }
+  }
   async function investigationCommand(action: InvestigationAction, payload: Record<string, unknown>, revision: number) {
     if (!chatId) throw new Error('Open an investigation first.')
     const id = chatId
@@ -235,7 +260,7 @@ export default function App() {
   const newChat = () => { current.current = null; skillTurn.current = null; setChat(null); setInvestigation(null); setText(''); setSkill(null); setFiles([]); setArtifact(null); setContextCleared(false); setError('') }
   const conversation = <>
     <div className="conversation-scroll">
-      <ChatView chat={chat} status={status} skills={skills} onStarter={(message, chosen) => { setText(message); chooseSkill(chosen) }}
+      <ChatView chat={chat} status={status} onStarter={(message, chosen) => { setText(message); chooseSkill(chosen) }}
         onStop={turn => { if (chat) void api.cancel(chat.id, turn).then(() => refresh(chat.id)).catch(report) }}
         onRetry={task => { void retryTask(task) }}
         onArtifact={selected => { setArtifact(selected); setContextCleared(false) }} />
@@ -251,23 +276,29 @@ export default function App() {
         history={history} models={models} skills={skills} onOpen={id => { void openChat(id) }} />
     </Suspense>
   }
-  return <div className={`app-shell ${sidebar ? 'with-sidebar' : ''}`}>
+  return <div className={`app-shell ${sidebar ? 'with-sidebar' : ''}`} style={{ '--session-width': `${sessionWidth}px` } as CSSProperties}>
     <ChatSidebar chats={history} current={chat?.id ?? null} open={sidebar} onNew={newChat} onOpen={id => { void openChat(id) }}
       onNewInvestigation={() => { void newInvestigation() }} creating={creating || !models.length}
+      alerts={alerts} onOpenAlert={alert => { void openAlert(alert) }}
       onClose={() => setSidebar(false)} onAccount={() => setAccount(true)}
       onRename={async (id, title) => { try { await api.patch(id, { title }); setHistory(await api.chats()); if (chat?.id === id) await refresh(id) } catch (cause) { report(cause) } }}
       onDelete={async id => { try { await api.delete(id); if (current.current === id) newChat(); setHistory(await api.chats()) } catch (cause) { report(cause) } }} />
+    {sidebar && <SidebarResize label="Resize session sidebar" controls="session-sidebar" width={sessionWidth}
+      min={180} max={360} side="left" onResize={setSessionWidth} />}
     <main className="main-chat">
       <header className="chat-header">
         <button className="icon-button" aria-label="Toggle history" onClick={() => setSidebar(!sidebar)}><PanelLeft size={19} /></button>
         <span className="conversation-title">{chat?.title ?? 'New conversation'}</span>
         <div className="header-right"><ModelPicker models={models} value={model} disabled={Boolean(active) || sending} onChange={id => { void selectModel(id) }} />
+          <ThemeToggle />
           {chat?.artifacts.length ? <button className="icon-button" aria-label="Toggle preview" onClick={() => setArtifact(artifact ? null : chat.artifacts.at(-1) ?? null)}><PanelRight size={19} /></button> : null}</div>
       </header>
       {error && <div className="error-banner" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16} /></button></div>}
       {isInvestigation ? investigation && investigation.chat_id === chatId
         ? <InvestigationWorkbench key={chatId} snapshot={investigation} busy={Boolean(active) || sending || mutating}
-          onCommand={investigationCommand} conversation={conversation} onDirection={setText} />
+          onCommand={investigationCommand} conversation={conversation} onDirection={setText} onOpenConversation={() => {
+            if (window.innerWidth <= 1000) setSidebar(false)
+          }} />
         : <p role="status">Loading investigation...</p>
         : conversation}
     </main>

@@ -44,6 +44,43 @@ def test_investigation_commands_are_scoped_idempotent_and_version_checked(reposi
     assert service.get(Scope("a", other["chat_id"]))["revision"] == 1
 
 
+def test_opening_an_alert_creates_or_resumes_one_linked_case(repository):
+    from skill_chat.investigations.service import InvestigationService
+
+    service = InvestigationService(repository)
+    first = service.open_alert("a", "openai", "ALT-2038", "open-1")
+    again = service.open_alert("a", "openai", "ALT-2038", "open-2")
+    assert first["created"] and not again["created"] and again["chat_id"] == first["chat_id"]
+    snapshot = service.get(Scope("a", first["chat_id"]))
+    assert snapshot["case_id"] == "CASE-1038"
+    assert snapshot["original_alert"]["priority"] == "Medium" and not snapshot["prepared"]
+    assert not snapshot["outputs"]["detect"]["needs_review"]
+    from skill_chat.investigations.schemas import InvestigationCommand
+    with pytest.raises(Conflict):
+        service.apply(Scope("a", first["chat_id"]), InvestigationCommand(
+            client_request_id="amend-detect", expected_revision=1, action="amend_output",
+            payload={"stage_id": "detect", "text": "Changed", "reason": "Try"}))
+    command(service, Scope("a", first["chat_id"]), "amend_fact",
+            {"beneficiary_description": "Changed", "reason": "Test"}, "fact")
+    assert not service.get(Scope("a", first["chat_id"]))["outputs"]["detect"]["needs_review"]
+    assert service.get(Scope("a", first["chat_id"]))["outputs"]["investigate"]["needs_review"]
+    listed = {item["id"]: item for item in service.alerts("a")}
+    assert listed["ALT-2038"]["chat_id"] == first["chat_id"] and listed["ALT-2038"]["stage"] == "investigate"
+    assert listed["ALT-2041"]["chat_id"] is None
+    assert all(item["chat_id"] is None for item in service.alerts("b"))
+    assert service.open_alert("b", "openai", "ALT-2038", "open-1")["created"]
+    with pytest.raises(NotFound):
+        service.open_alert("a", "openai", "ALT-9999", "open-3")
+    with pytest.raises(Conflict):
+        service.open_alert("a", "openai", "ALT-2036", "open-1")
+
+
+def test_referral_investigation_stays_unlinked_to_alerts(repository):
+    service, scope = create_investigation(repository)
+    assert all(item["chat_id"] is None for item in service.alerts("a"))
+    assert service.get(scope)["case_id"] == "CASE-1041"
+
+
 def test_amendments_preserve_history_and_invalidate_dependent_review(repository):
     service, scope = create_investigation(repository)
     before = service.get(scope)["outputs"]["investigate"]["text"]

@@ -15,7 +15,7 @@ export interface RevisionRecord {
 }
 export interface Investigation {
   chat_id: string; case_id: string; connector: 'demo'; revision: number; current_stage: Stage;
-  original_alert: { id: string; priority: string; trigger: string };
+  original_alert: { id: string; priority: string; trigger: string; question?: string };
   sources: Source[]; shared_facts: { beneficiary_description: string };
   outputs: Record<string, StageOutput>;
   history: RevisionRecord[];
@@ -28,4 +28,8 @@ export interface Investigation {
 export type InvestigationAction = 'amend_output' | 'amend_fact' | 'acknowledge_stage' | 'select_stage' |
   'review_note' | 'prepare_note' | 'prepare' | 'request_clarification' | 'resolve_clarification' | 'cancel_clarification'
 export type OnCommand = (action: InvestigationAction, payload: Record<string, unknown>, revision: number) => Promise<void>
+export interface Alert {
+  id: string; case_id: string; subject: string; priority: string; trigger: string; received: string;
+  review_by: string; evidence: 'demo' | 'none'; chat_id: string | null; stage: Stage | null
+}
 export interface StateEnvelope { snapshot: Investigation; sequence: number }

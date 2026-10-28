@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { InvestigationWorkbench } from '../investigations/InvestigationWorkbench'
@@ -54,4 +54,31 @@ it('preserves a stage amendment and reason while inspecting other stages', async
   await user.click(screen.getByRole('button', { name: /2 Investigate/ }))
   expect(screen.getByRole('textbox', { name: 'Stage output' })).toHaveValue('My pending scope')
   expect(screen.getByRole('textbox', { name: 'Reason for stage amendment' })).toHaveValue('Compare with analysis')
+})
+
+it('keeps stage and review drafts across workspace tabs with conversation in a separate resizable rail', async () => {
+  const user = userEvent.setup()
+  render(<InvestigationWorkbench snapshot={fixture()} busy={false} onCommand={vi.fn()} conversation={<textarea aria-label="Message" defaultValue="Pending question" />} onDirection={vi.fn()} />)
+  const workspace = screen.getByRole('region', { name: 'Investigation stage workspace' })
+  const assistant = screen.getByRole('complementary', { name: 'Investigation assistant' })
+  expect(within(assistant).getByRole('textbox', { name: 'Message' })).toHaveValue('Pending question')
+  expect(within(workspace).queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
+  await user.clear(screen.getByRole('textbox', { name: 'Stage output' }))
+  await user.type(screen.getByRole('textbox', { name: 'Stage output' }), 'Unpublished analyst amendment')
+  await user.click(screen.getByRole('tab', { name: 'Evidence' }))
+  expect(screen.queryByRole('textbox', { name: 'Stage output' })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('tab', { name: 'Review' }))
+  await user.type(screen.getByRole('textbox', { name: 'Analyst rationale' }), 'Keep the missing evidence explicit')
+  await user.click(screen.getByRole('tab', { name: 'Output' }))
+  expect(screen.getByRole('textbox', { name: 'Stage output' })).toHaveValue('Unpublished analyst amendment')
+  await user.click(screen.getByRole('tab', { name: 'Review' }))
+  expect(screen.getByRole('textbox', { name: 'Analyst rationale' })).toHaveValue('Keep the missing evidence explicit')
+  const resize = screen.getByRole('separator', { name: 'Resize chat sidebar' })
+  const width = Number(resize.getAttribute('aria-valuenow'))
+  fireEvent.keyDown(resize, { key: 'ArrowLeft' })
+  expect(Number(resize.getAttribute('aria-valuenow'))).toBeGreaterThan(width)
+  await user.click(screen.getByRole('button', { name: 'Close conversation sidebar' }))
+  expect(screen.getByRole('button', { name: 'Toggle conversation sidebar' })).toHaveAttribute('aria-expanded', 'false')
+  await user.click(screen.getByRole('button', { name: 'Toggle conversation sidebar' }))
+  expect(within(assistant).getByRole('textbox', { name: 'Message' })).toHaveValue('Pending question')
 })

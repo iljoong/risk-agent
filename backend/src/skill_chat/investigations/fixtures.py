@@ -75,3 +75,21 @@ EVIDENCE = [
      "source_ids": ["SRC-04"], "locators": ["CASE-0812"],
      "text": "Route an authorized access request; do not bypass restrictions or infer adverse content."},
 ]
+ALERTS = [
+    {"id": "ALT-2041", "case_id": "CASE-1041", "subject": "Harbour Components Ltd", "priority": "High",
+     "trigger": "Rapid movement of funds to a newly observed beneficiary",
+     "question": "Is the rapid movement of funds to Meridian Supply explained by ordinary trade activity?",
+     "received": "2026-10-28", "review_by": "2026-11-27", "evidence": "demo"},
+    {"id": "ALT-2038", "case_id": "CASE-1038", "subject": "Fenwick Print Ltd", "priority": "Medium",
+     "trigger": "Repeated cash deposits just below the reporting threshold",
+     "question": "Do the deposit amounts and timing fit Fenwick's retail cash cycle?",
+     "received": "2026-10-27", "review_by": "2026-11-26", "evidence": "none"},
+    {"id": "ALT-2036", "case_id": "CASE-1036", "subject": "Quayside Stationers", "priority": "Low",
+     "trigger": "Dormant account reactivated with a single large receipt",
+     "question": "Is the reactivation consistent with the customer's stated trading plans?",
+     "received": "2026-10-26", "review_by": "2026-11-25", "evidence": "none"},
+    {"id": "ALT-2033", "case_id": "CASE-1033", "subject": "Northgate Tooling", "priority": "Medium",
+     "trigger": "Counterparty name differs from the account holder on an international transfer",
+     "question": "Does the name difference reflect a trading name or an unrelated party?",
+     "received": "2026-10-25", "review_by": "2026-11-24", "evidence": "none"},
+]

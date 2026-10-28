@@ -49,6 +49,36 @@ def test_config_public_choices_do_not_expose_provider_details(tmp_path):
     assert settings.model("unknown") is None
 
 
+def test_remote_frontend_origin_is_explicit_and_normalized(tmp_path):
+    settings = load_settings({
+        "APP_MODELS": json.dumps(models()), "APP_DATA_DIR": str(tmp_path),
+        "APP_REMOTE_FRONTEND_ORIGIN": "http://203.0.113.10:5173/",
+    })
+    assert settings.remote_frontend_origin == "http://203.0.113.10:5173"
+    with pytest.raises(ValueError, match="loopback"):
+        load_settings({
+            "APP_MODELS": json.dumps(models()), "APP_DATA_DIR": str(tmp_path),
+            "APP_FRONTEND_ORIGIN": "http://203.0.113.10:5173",
+        })
+
+
+@pytest.mark.parametrize("origin", [
+    "ftp://203.0.113.10:5173",
+    "http://user:password@203.0.113.10:5173",
+    "http://203.0.113.10:5173/path",
+    "http://203.0.113.10:5173?query=yes",
+    "http://203.0.113.10:5173#fragment",
+    "http://*:5173",
+    "http://203.0.113.10:99999",
+])
+def test_remote_frontend_rejects_non_origins(tmp_path, origin):
+    with pytest.raises(ValueError):
+        load_settings({
+            "APP_MODELS": json.dumps(models()), "APP_DATA_DIR": str(tmp_path),
+            "APP_REMOTE_FRONTEND_ORIGIN": origin,
+        })
+
+
 def test_webiq_key_is_optional_server_only_and_redacted(tmp_path):
     settings = load_settings({
         "APP_MODELS": json.dumps(models()), "APP_DATA_DIR": str(tmp_path),

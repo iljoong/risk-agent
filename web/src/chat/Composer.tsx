@@ -38,7 +38,7 @@ export function Composer({ text, onText, skills, selected, onSkill, attachments,
         {attachments.map(file => <span key={file.id} className="file-chip"><FileText size={15} />{file.filename}
           <button aria-label={`Remove ${file.filename}`} onClick={() => onRemove(file.id)}><X size={13} /></button></span>)}
       </div>}
-      <textarea ref={input} aria-label="Message" placeholder="Ask a question, attach an RFP, or type / for a skill"
+      <textarea ref={input} aria-label="Message" placeholder="Ask a question, attach a PDF, or type / for a skill"
         rows={2} value={text} disabled={disabled} onChange={event => { onText(event.target.value); setMenu(event.target.value.startsWith('/')) }}
         onKeyDown={event => {
           if (event.key === 'Escape') setMenu(false)
@@ -66,7 +66,7 @@ export function Composer({ text, onText, skills, selected, onSkill, attachments,
       {menu && <div className="skill-menu" role="listbox" aria-label="Available skills">
         <div className="menu-heading">Choose a skill</div>
         {choices.map(skill => <button key={skill.id} role="option" aria-selected={selected?.id === skill.id} onClick={() => pick(skill)}>
-          <span className="skill-menu-icon"><Slash size={18} /></span><span><strong>{skill.name}</strong><small>{skill.description}</small></span>
+          <span className="skill-menu-icon"><Slash size={18} /></span><strong>{skill.name}</strong>
         </button>)}
         {!choices.length && <p>No matching skills. Add developer skills and restart the app.</p>}
       </div>}

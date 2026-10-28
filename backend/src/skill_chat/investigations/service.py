@@ -8,6 +8,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy import insert, select, update
 
 from skill_chat.contracts import Conflict, InvalidInput, NotFound, Scope, Unavailable
+from skill_chat.investigations.fixtures import ALERTS
 from skill_chat.investigations.schemas import (
     MAX_UI_EVENT_BYTES,
     STAGES,
@@ -88,33 +89,71 @@ class InvestigationService:
                 if existing["model_id"] != model_id:
                     raise Conflict("Creation request ID was reused with a different model")
                 return {"chat_id": existing["chat_id"], "revision": existing["revision"]}
-            chat_id = uuid4().hex
-            now = time.time()
-            connection.execute(insert(chats).values(
-                id=chat_id, owner_id=owner_id, title="Harbour Components Ltd / CASE-1041",
-                model_id=model_id, created=now, deleting=0,
-            ))
-            state = InvestigationSnapshot(
-                chat_id=chat_id, case_id="CASE-1041", connector="demo", revision=1,
-                current_stage="investigate",
-                original_alert={"id": "ALT-2041", "priority": "High",
-                                "trigger": "Rapid movement of funds to a newly observed beneficiary"},
-                shared_facts={"beneficiary_description": "Beneficiary not observed in the available 90-day history"},
-                sources=[], history=[],
-                outputs={stage: StageOutput(text=(
-                    "Original alert ALT-2041: High priority from the existing fictional AML system."
-                    if stage == "detect" else
-                    "Assess the payment pattern and plausible supplier explanation using permitted demo sources."
-                    if stage == "investigate" else "Awaiting investigation preparation and human assessment."
-                ), version=1, needs_review=True) for stage in STAGES},
-                review={"reviewed": False, "rationale": "", "prepared_note": None},
-            ).model_dump()
-            connection.execute(insert(investigations).values(
-                id=uuid4().hex, owner_id=owner_id, chat_id=chat_id, created=now,
-                creation_request_id=client_request_id, model_id=model_id, revision=1, state=state,
-            ))
-            self.emit(connection, Scope(owner_id, chat_id), state)
-            return {"chat_id": chat_id, "revision": 1}
+            return self.insert_case(connection, owner_id, model_id, client_request_id, None)
+
+    def alerts(self, owner_id: str) -> list[dict]:
+        with self.repo.db.engine.connect() as connection:
+            linked = {row["alert_id"]: row for row in connection.execute(select(
+                investigations.c.alert_id, investigations.c.chat_id, investigations.c.state,
+            ).where(investigations.c.owner_id == owner_id, investigations.c.alert_id.is_not(None))).mappings()}
+        return [{
+            **{key: value for key, value in alert.items() if key != "question"},
+            "chat_id": linked[alert["id"]]["chat_id"] if alert["id"] in linked else None,
+            "stage": linked[alert["id"]]["state"]["current_stage"] if alert["id"] in linked else None,
+        } for alert in ALERTS]
+
+    def open_alert(self, owner_id: str, model_id: str, alert_id: str, client_request_id: str) -> dict:
+        alert = next((item for item in ALERTS if item["id"] == alert_id), None)
+        if alert is None:
+            raise NotFound("Alert not found")
+        if not self.repo.settings.model(model_id):
+            raise Unavailable("Selected model is not configured")
+        with self.repo.db.transaction() as connection:
+            existing = connection.execute(select(investigations).where(
+                investigations.c.owner_id == owner_id,
+                (investigations.c.alert_id == alert_id)
+                | (investigations.c.creation_request_id == client_request_id),
+            )).mappings().first()
+            if existing:
+                if existing["alert_id"] != alert_id:
+                    raise Conflict("Creation request ID was reused for a different alert")
+                return {"chat_id": existing["chat_id"], "revision": existing["revision"], "created": False}
+            return {**self.insert_case(connection, owner_id, model_id, client_request_id, alert), "created": True}
+
+    def insert_case(self, connection, owner_id: str, model_id: str, request_id: str, alert: dict | None) -> dict:
+        chat_id = uuid4().hex
+        now = time.time()
+        case_id = alert["case_id"] if alert else "CASE-1041"
+        subject = alert["subject"] if alert else "Harbour Components Ltd"
+        connection.execute(insert(chats).values(
+            id=chat_id, owner_id=owner_id, title=f"{subject} / {case_id}",
+            model_id=model_id, created=now, deleting=0,
+        ))
+        original = ({"id": alert["id"], "priority": alert["priority"], "trigger": alert["trigger"],
+                     "subject": subject, "question": alert["question"]} if alert else
+                    {"id": "ALT-2041", "priority": "High",
+                     "trigger": "Rapid movement of funds to a newly observed beneficiary"})
+        state = InvestigationSnapshot(
+            chat_id=chat_id, case_id=case_id, connector="demo", revision=1,
+            current_stage="investigate", original_alert=original,
+            shared_facts={"beneficiary_description": "Beneficiary not observed in the available 90-day history"},
+            sources=[], history=[],
+            outputs={stage: StageOutput(text=(
+                f"Original alert {original['id']}: {original['priority']} priority from the existing fictional AML system."
+                if stage == "detect" else
+                (f"Question: {alert['question']} No evidence has been collected yet." if alert else
+                 "Assess the payment pattern and plausible supplier explanation using permitted demo sources.")
+                if stage == "investigate" else "Awaiting investigation preparation and human assessment."
+            ), version=1, needs_review=not (alert and stage == "detect")) for stage in STAGES},
+            review={"reviewed": False, "rationale": "", "prepared_note": None},
+        ).model_dump()
+        connection.execute(insert(investigations).values(
+            id=uuid4().hex, owner_id=owner_id, chat_id=chat_id, created=now,
+            creation_request_id=request_id, model_id=model_id, revision=1, state=state,
+            alert_id=alert["id"] if alert else None,
+        ))
+        self.emit(connection, Scope(owner_id, chat_id), state)
+        return {"chat_id": chat_id, "revision": 1}
 
     def emit(self, connection, scope: Scope, state: dict) -> int:
         payload = StateSnapshotEvent(type=EventType.STATE_SNAPSHOT, snapshot=self.project(state)).model_dump(
@@ -159,6 +198,8 @@ class InvestigationService:
     @staticmethod
     def invalidate(state: dict, stages: list[str]):
         for stage in stages:
+            if stage == "detect" and "question" in state["original_alert"]:
+                continue
             state["outputs"][stage]["needs_review"] = True
         state["review"]["reviewed"] = False
         state["review"]["prepared_note"] = None
@@ -173,7 +214,7 @@ class InvestigationService:
             if source["status"] == "available" and source.get("version")
         )
         parts = [
-            f"CASE-1041 / Harbour Components Ltd / revision {state['revision']}",
+            f"{state['case_id']} / {state['original_alert'].get('subject', 'Harbour Components Ltd')} / revision {state['revision']}",
             "FICTIONAL DEMO RECORDS. Draft for human review, not a financial or compliance determination.",
             state["shared_facts"]["beneficiary_description"],
         ]
@@ -335,6 +376,8 @@ class InvestigationService:
                 self.invalidate(state, list(STAGES[2:]))
             elif command.action == "amend_output":
                 stage = payload["stage_id"]
+                if stage == "detect" and "question" in state["original_alert"]:
+                    raise Conflict("Detect records the original alert and cannot be amended")
                 output = state["outputs"][stage]
                 record.update(stage_id=stage, before=output["text"], after=payload["text"])
                 output["text"] = payload["text"]

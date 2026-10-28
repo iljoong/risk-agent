@@ -1,10 +1,12 @@
 import { Check, FileText, MessageSquare, MoreHorizontal, Pencil, Plus, Trash2, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import type { ChatSummary } from '../api/types'
+import { stageNames } from '../investigations/types'
+import type { Alert } from '../investigations/types'
 
-export function ChatSidebar({ chats, current, open, onNew, onNewInvestigation, creating, onOpen, onRename, onDelete, onAccount, onClose }: {
+export function ChatSidebar({ chats, current, open, onNew, onNewInvestigation, creating, onOpen, onRename, onDelete, onAccount, onClose, alerts = [], onOpenAlert }: {
   chats: ChatSummary[]; current: string | null; open: boolean; onNew: () => void; onOpen: (id: string) => void;
-  onNewInvestigation: () => void; creating: boolean;
+  onNewInvestigation: () => void; creating: boolean; alerts?: Alert[]; onOpenAlert?: (alert: Alert) => void;
   onRename: (id: string, title: string) => Promise<void>; onDelete: (id: string) => Promise<void>;
   onAccount: () => void; onClose: () => void
 }) {
@@ -12,9 +14,20 @@ export function ChatSidebar({ chats, current, open, onNew, onNewInvestigation, c
   const [title, setTitle] = useState('')
   const [menu, setMenu] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
-  return <aside className={`sidebar ${open ? 'sidebar-open' : ''}`} aria-label="Investigation sessions">
-    <div className="sidebar-brand"><div className="brand-mark"><FileText size={19} /></div><strong>Workroom</strong>
+  return <aside id="session-sidebar" className={`sidebar ${open ? 'sidebar-open' : ''}`} aria-label="Investigation sessions">
+    <div className="sidebar-brand"><div className="brand-mark"><FileText size={19} /></div><strong>RCI Agent</strong>
       <button className="icon-button mobile-close" aria-label="Close history" onClick={onClose}><X size={18} /></button></div>
+    {alerts.length > 0 && <section className="alert-queue" aria-label="Alert queue">
+      <div className="history-label">Alerts (fictional demo)</div>
+      <ul>{alerts.map(alert => <li key={alert.id}>
+        <button disabled={creating} aria-label={`${alert.chat_id ? 'Resume' : 'Open'} alert ${alert.id}, ${alert.subject}, ${alert.priority} priority`}
+          onClick={() => onOpenAlert?.(alert)}>
+          <strong>{alert.id}</strong><span className={`alert-priority priority-${alert.priority.toLowerCase()}`}>{alert.priority}</span>
+          <span className="alert-subject">{alert.subject}</span>
+          <small>{alert.trigger}</small>
+          <small>{alert.chat_id && alert.stage ? `Case open at ${stageNames[alert.stage]}` : `No case yet. Review by ${alert.review_by}`}</small>
+        </button></li>)}</ul>
+    </section>}
     <button className="new-chat" disabled={creating} onClick={onNewInvestigation}><Plus size={17} /> New investigation</button>
     <button className="new-conversation" onClick={onNew}>New conversation</button>
     <div className="history-label">Investigation sessions</div>

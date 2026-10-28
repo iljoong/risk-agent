@@ -2,6 +2,8 @@
 
 Evidence desk presenter guide | 28 October 2026
 
+Editions: [English PDF](demonstration-manual.pdf), [Korean Markdown](demonstration-manual.ko.md), [Korean PDF](demonstration-manual.ko.pdf), [Japanese Markdown](demonstration-manual.ja.md), [Japanese PDF](demonstration-manual.ja.pdf), [Chinese Markdown](demonstration-manual.zh.md), [Chinese PDF](demonstration-manual.zh.pdf).
+
 ## 1. Demo at a glance
 
 **Audience:** presenters, analysts, and stakeholders exploring the implemented investigation demo. Allow 15-20 minutes after setup. This manual describes the current app, not every capability in the aspirational scenario pack.
@@ -12,7 +14,7 @@ Evidence desk presenter guide | 28 October 2026
 
 | Segment | Time | Demonstration |
 |---|---|---|
-| Open and prepare | 3 min | Create a session and collect packaged fictional evidence. |
+| Open and prepare | 3 min | Open an alert from the alert list, confirm the question, then collect packaged fictional evidence. |
 | Inspect and challenge | 4 min | Inspect source limitations and ask the configured agent to challenge findings. |
 | Amend and clarify | 4 min | Save an analyst correction and submit a bounded scope form. |
 | Review and prepare | 4 min | Review six outputs and prepare a copyable case note. |
@@ -40,7 +42,7 @@ Use the repository root in Windows PowerShell. Follow **README.md** for first-ti
 
 If upgrading, stop the app's API and worker and back up the configured data directory, `.data` by default, before startup migrations. Restore the backend and frontend locks as documented in the README. Restart both API and worker after extension or dependency changes; their configuration and data directory must match.
 
-Use a configured model with authorized inference access for the full route. Select it before beginning. The sidebar session title is the same fictional case for each new investigation, so avoid creating unnecessary duplicate sessions during rehearsal.
+Select a model with authorized inference access for the full route. Select it before beginning. Opening an alert creates its one linked case and reopening it resumes that case, so rehearsal does not create duplicates. Each **New investigation** creates another unlinked CASE-1041 session with the same title, so use it sparingly.
 
 ### Start the three processes
 
@@ -73,26 +75,45 @@ Invoke-RestMethod http://127.0.0.1:8000/health/ready
 
 Readiness requires a recent worker heartbeat. It does not validate cloud permissions or model quality. Rehearse one short model request separately before a full-route presentation; it may be billable.
 
-**Presenter checklist:** use fictional data only; enlarge the browser for the audience; locate the model picker; keep the API and worker terminals available for diagnosis without projecting logs or secrets. Do not use the isolated automated-test servers as a substitute for the normal app.
+**Presenter checklist:** use fictional data only; enlarge the browser for the audience; locate the model picker; keep the API and worker terminals available for diagnosis without projecting logs or secrets. Use the ordinary app URL above, not the in-memory layout comparison at `?prototype=centered-chat`. Do not use the isolated automated-test servers as a substitute for the normal app.
 
 ## 3. Open the desk and inspect evidence
 
-### Create the investigation
+### Open the alert
 
-1. In the **Investigation sessions** sidebar, choose **New investigation**.
-2. Confirm **CASE-1041 evidence desk**, the **Demo connector / fictional records** label, and the original **High** alert priority.
-3. Point out the six stages: Detect, Investigate, Gather evidence, Analyze, Human review, and Decision.
-4. Click **Prepare investigation**. Wait for the preparation task to succeed and **Refresh demo evidence** to become enabled.
+1. In the sidebar **Alerts (fictional demo)** list, review the four alerts. Each row shows the alert ID, priority, subject, trigger, and either **No case yet. Review by** a date or **Case open at** a stage. The review-by date is a reminder, not regulatory advice.
+2. Choose **Open alert ALT-2041, Harbour Components Ltd**. This creates the one case linked to that alert. Choosing the same alert later (its button then reads **Resume alert**) reopens that case instead of creating a duplicate.
+3. Confirm **CASE-1041 evidence desk**, the **Demo connector / fictional records** label, and the original **High** alert priority. Nothing has been prepared yet: the desk shows the starting **Question to answer** and states that no evidence has been collected.
+4. Point out the six stages: Detect, Investigate, Gather evidence, Analyze, Human review, and Decision. The case opens at **Investigate**. Click **Detect** to show that it is **Read-only**: it records the original alert and priority, starts acknowledged, is not invalidated by later changes, and cannot be amended. **Continue to Investigate** returns to the working stage.
+5. Optionally use **Clarify investigation scope** before preparing evidence (section 5).
+6. Click **Prepare investigation**. Wait for the preparation task to succeed and **Refresh demo evidence** to become enabled.
 
-**Expected result:** the transaction timeline and evidence register populate. Preparation retrieves packaged fixture records through the backend worker without model inference. It is not a live financial-system query.
+**Expected result:** stage outputs update. Select the central **Evidence** tab to see the populated transaction timeline and evidence register. Preparation retrieves packaged fixture records through the backend worker without model inference. It is not a live financial-system query.
+
+**Alert without evidence (optional, 2 min):** open another alert, for example **ALT-2038**, and click **Prepare investigation**. Only ALT-2041 has packaged demonstration evidence, so preparation records one missing source (**SRC-00**) and the gap **GAP-01**. Analyze states that no finding can be drawn. Use this to show that the desk reports a gap rather than inventing evidence.
+
+**Referral path:** **New investigation** remains below the alert list for a referral or manual lead. It creates an independent CASE-1041 session that is not linked to any alert, and its Detect stage stays editable.
 
 ### Explain navigation
 
-Click **Analyze** to inspect its output. Clicking a stage selects the view; it does not advance the workflow. Use **Make current stage** only when deliberately changing the current workflow stage. Reviewing a note later sets Human review; preparing a note sets Decision.
+The implemented **A layout** has **Investigation sessions** on the left, the workflow and stage workspace in the center, and **Investigation assistant** with conversation and composer on the right.
+
+| Area or control | Presenter action |
+|---|---|
+| **Output** tab | Edit the inspected stage, amend shared facts, and open revision history. |
+| **Evidence** tab | Inspect the transaction timeline, evidence register, and source records. |
+| **Review** tab | Enter analyst rationale, review the note, and prepare or copy it. **Review & record** opens this tab too. |
+| Sidebar dividers | On desktop, drag either divider. Keyboard users can focus it and use Left/Right arrows; Home/End select its minimum/maximum width. |
+| **Chat** | Open or close the right conversation sidebar. Its close icon returns to the workspace without discarding the message draft. |
+| Sun/moon button | Switch light/dark mode. The first visit follows the system; an explicit choice is saved when browser storage is available. |
+
+On screens up to 1,000 pixels wide, history and chat are drawers rather than simultaneous columns; resizing handles are hidden. Use **Toggle history** to open sessions and **Chat** to open the assistant. Close the chat drawer before working in the central area.
+
+Click **Analyze** to inspect its **Output** tab. Clicking any stage returns to Output; it does not advance the workflow. Use **Make current stage** only when deliberately changing the current workflow stage. Reviewing a note later sets Human review; preparing a note sets Decision.
 
 ### Inspect the underlying records
 
-Open **Inspect SRC-01** from a relevant evidence item. Read the selected ledger records, fixture snapshot, version, retrieval timestamp, and coverage. Close the source before moving on.
+Select **Evidence**, then open **Inspect SRC-01** from a relevant evidence item. Read the selected ledger records, fixture snapshot, version, retrieval timestamp, and coverage. Use **Close source** before moving on.
 
 | Record | UTC | Amount | Counterparty |
 |---|---|---|---|
@@ -101,9 +122,9 @@ Open **Inspect SRC-01** from a relevant evidence item. Read the selected ledger 
 | TX-783 | 09:54 | +GBP 14,000 | Cedar Parts |
 | TX-784 | 10:08 | -GBP 45,500 | Meridian Supply |
 
-In the **Analyze** output, point to the 94.79% comparison and 56-minute window. Explain that selected records do not supply balances or establish fund lineage or intent.
+Select **Analyze** to return to its **Output** tab and point to the 94.79% comparison and 56-minute window. Explain that selected records do not supply balances or establish fund lineage or intent.
 
-Inspect **SRC-04** to show the restricted prior case. Inspect **SRC-07** to show the missing invoice. **All sources (7)** provides another way to open each source.
+Return to **Evidence**. Inspect **SRC-04** to show the restricted prior case and **SRC-07** to show the missing invoice. **All sources (7)** provides another way to open each source.
 
 **Expected result:** SRC-04 remains restricted and SRC-07 remains missing. Neither means an adverse finding or a completed corroboration check. Refreshing evidence changes retrieval observations; it does not make unavailable records accessible or make old fixture content newly current.
 
@@ -113,7 +134,7 @@ Inspect **SRC-04** to show the restricted prior case. Inspect **SRC-07** to show
 
 ### Ask the configured agent
 
-For the full route, click **Draft a challenge**. This only populates the composer. Read the prompt, then click **Send message**.
+For the full route, select **Analyze** in the center. In the right **Investigation assistant** sidebar, click **Draft a challenge**. If the assistant is closed, open it with **Chat** first. This only populates the composer. Read the prompt, then click **Send message**.
 
 Wait for this new task to finish; do not mistake a preceding successful task for the new result. Inspect the response and stage output rather than promising a fixed answer.
 
@@ -133,21 +154,21 @@ Select **Analyze**, replace **Stage output** with the following example, and ent
 
 > Preserve the alternative explanation and distinguish observed facts from interpretation.
 
-Before saving, click **Detect** and return to **Analyze**. The unsaved output and reason should remain while inspecting stages. Click **Apply stage amendment** to persist them.
+Before saving, click **Detect** and return to **Analyze**. Then switch to **Evidence** and back to **Output**. The unsaved output and reason should remain through both kinds of navigation. Click **Apply stage amendment** to persist them.
 
 **Expected result:** the revision and output version increase; Analyze and downstream outputs require review; a prepared note is cleared. Earlier stage prose and the original source records are not overwritten.
 
 ### Explain persistence precisely
 
-Saved edits enter subsequent agent context. Unsaved drafts survive stage inspection within the mounted desk, but are not a saved record and must not be relied on across reloads or session changes.
+Saved edits enter subsequent agent context. Unsaved stage edits, reasons, and review rationale survive tab changes within the mounted desk; stage edits also survive stage inspection. A message draft survives closing and reopening the assistant. None of these unsaved drafts is a saved record; do not rely on them across reloads or session changes.
 
-Open **Revision history** to inspect the amendment, reason, **Previous text**, and **Saved text** where available. Use **Load older revisions** when offered. This is application revision history, not proof of an external compliance audit system.
+In **Output**, open **Revision history** to inspect the amendment, reason, **Previous text**, and **Saved text** where available. Use **Load older revisions** when offered. This is application revision history, not proof of an external compliance audit system.
 
 ## 5. Clarify scope and check fictional policy
 
 ### Demonstrate the bounded A2UI form
 
-1. With no active task, click **Clarify investigation scope**.
+1. With no active task, click **Clarify investigation scope** below the active central tab's content; scroll down if needed. On mobile, close the chat drawer first.
 2. In **Investigation scope**, enter the example below.
 3. For the full route, click **Apply scope and ask agent**.
 4. Wait for **Scope clarification resolved.** and for the newly created task to succeed before continuing.
@@ -162,13 +183,28 @@ If the official renderer cannot display the form, an accessible **Plain form fal
 
 ### Optional policy request
 
-Open **All sources (7)** and inspect **SRC-05** and **SRC-06**. These contain fictional **G-AML-07 v3** and **L-01 v2** passages.
+In **Evidence**, open **All sources (7)** and inspect **SRC-05** and **SRC-06**. These contain fictional **G-AML-07 v3** and **L-01 v2** passages.
 
-Click **Draft a policy check**, inspect the prepared composer text, and send it only on the full route. Alternatively use:
+In the right assistant sidebar, click **Draft a policy check**, inspect the prepared composer text, and send it only on the full route. Alternatively use:
 
 > Using the supplied fictional G-AML-07 v3 and L-01 v2 passages, identify the checks and gaps that remain before a human could recommend closure or escalation. Cite the passage locators. Distinguish this demo policy from law and do not claim the invoice has been corroborated.
 
 **Expected discussion:** supporting and contradicting evidence must be considered; investigator validation and rationale remain necessary; the missing invoice and inaccessible case remain limitations. The generated wording is model-dependent and must be checked against the source passages.
+
+### Optional AML skills
+
+The six workflow stages do not automatically run six skills. If demonstrating an installed AML skill on the full route, prepare the evidence first, then choose one from **Skills** in the assistant composer or type its slash command. The popup shows names only.
+
+| Skill | Demonstration focus |
+|---|---|
+| `/aml-case-context` | Explain the recorded alert, customer context, and information gaps. |
+| `/aml-transaction-behaviour` | Assess verified transaction indicators against expectations and history. |
+| `/aml-hypothesis-review` | Test concerns against legitimate explanations and counterevidence. |
+| `/aml-policy-applicability` | Identify applicable supplied procedures and human approval requirements. |
+| `/aml-investigation-readiness` | Identify incomplete checks; missing required evidence must block a ready result. |
+| `/aml-case-narrative` | Draft a cited, editable case note for analyst review. |
+
+These are optional instructions, not a validated risk model, approved real bank policy pack, calculation engine, or live case integration. Calculations must come from verified preparation metrics or identified approved tools, not language-model arithmetic. Selecting a skill alone does not run inference; sending its prompt does. A selected skill remains active for follow-ups; use **Clear skill** on its composer chip to return to ordinary prompts.
 
 ### Explain AG-UI without overclaiming
 
@@ -196,10 +232,10 @@ Enter a meaningful **Reason for stage amendment** for each change and click **Ap
 
 ### Acknowledge and review
 
-1. Visit all six stage outputs after the final amendment.
+1. Visit the five editable stage outputs after the final amendment. Detect is read-only and already acknowledged for alert-opened cases.
 2. Validate each output and its evidence references. Click **Acknowledge this output** only when satisfied.
-3. Wait until each stage shows **Acknowledged**, not merely a disabled button while a request is running.
-4. Open **Review & record**. In **Analyst rationale**, enter the example below, adjusting it to the actual outputs.
+3. Wait until each editable stage shows **Acknowledged**, not merely a disabled button while a request is running.
+4. Select the central **Review** tab, or click **Review & record**. In **Analyst rationale**, enter the example below, adjusting it to the actual outputs.
 5. Click **Mark note reviewed**, then **Prepare case note**.
 
 > I checked the selected records and alternative supplier explanation. The invoice gap and restricted prior case remain unresolved. Further authorized evidence collection is proposed; no external decision or approval is confirmed.
@@ -216,7 +252,7 @@ Click **Copy case note**, or manually select and copy the displayed note if clip
 
 ### Amend a shared fact
 
-After preparing the note, open **Shared fact across all stages**. Change **Shared beneficiary description** to:
+After preparing the note, select **Output** and open **Shared fact across all stages**. Change **Shared beneficiary description** to:
 
 > Meridian Supply was not observed in the available 90-day history; the age of the commercial relationship is unknown.
 
@@ -226,15 +262,15 @@ In **Reason for shared fact amendment**, enter:
 
 Click **Apply shared fact amendment**.
 
-**Expected result:** the shared finding changes; all six outputs require re-review; the reviewed flag and prepared note are cleared. **Copy case note** disappears and note review is unavailable until the required acknowledgments are renewed.
+**Expected result:** the shared finding changes; the five editable outputs require re-review (Detect stays acknowledged on alert-opened cases); the reviewed flag and prepared note are cleared. Return to **Review**: **Copy case note** is no longer available and note review is blocked until the required acknowledgments are renewed. Switching to Output alone only hides the note; the amendment is what invalidates it.
 
 The shared wording is now available to all subsequent agent turns. It does not automatically replace each stage's text or alter immutable source content. If demonstrating agent propagation, send a short request to explain the amended shared fact and propose any needed output corrections; this is a model call.
 
 ### Inspect the record and reopen
 
-Open **Revision history**. Show the actor, action, revision, reason, and before/after text for an amendment. Load older revisions when available.
+Return to **Output** and open **Revision history**. Show the actor, action, revision, reason, and before/after text for an amendment. Load older revisions when available.
 
-Save any remaining draft before reloading. Reload the page and reopen **Harbour Components Ltd / CASE-1041** from the sidebar. If several sessions share that title, select the one just used. Confirm the saved amendment, evidence, and clarification status remain.
+Save any remaining draft before reloading. Reload the page and reopen the case by choosing **Resume alert ALT-2041** in the alert list, or select it from **Investigation sessions**. If several sessions share that title, select the one just used. Confirm the saved amendment, evidence, and clarification status remain.
 
 Reloading does not itself rerun evidence preparation or agent analysis. Browser disconnection does not cancel durable background work.
 
@@ -246,7 +282,7 @@ Choose **New conversation** to show that ordinary chat, PDF review, optional ski
 
 ### Reset for the next demonstration
 
-Use **New investigation** for a fresh independent fictional session. Do not delete `.data` to reset the demo. Avoid **Refresh demo evidence** as a reset button: it creates a new preparation turn and can invalidate prior review.
+Open a different alert (for example ALT-2036) or use **New investigation** for a fresh fictional session; reopening ALT-2041 resumes the existing case, it does not reset it. To repeat ALT-2041 from the start, delete its session from **Investigation sessions** (this frees the alert for a new case). Do not delete `.data` to reset the demo. Avoid **Refresh demo evidence** as a reset button: it creates a new preparation turn and can invalidate prior review.
 
 ## 8. Troubleshooting and boundaries
 
@@ -261,7 +297,8 @@ Use **New investigation** for a fresh independent fictional session. Do not dele
 | Note cannot be prepared | Finish preparation; amend placeholders; acknowledge every affected stage; enter rationale; mark the note reviewed. |
 | Scope renderer fails | Use the plain fallback if offered. If the surface is invalid, reopen the session to reload it. |
 | Copy fails | Select and copy the displayed note manually; external saving remains unconfirmed. |
-| Sidebar is hidden | Use **Toggle history**, particularly on narrow screens. |
+| Sessions or assistant are hidden | Use **Toggle history** for sessions or **Chat** for the assistant. On narrow screens, close the chat drawer before editing the workspace. |
+| Timeline, review, or history seems missing | Select **Evidence** for sources, **Review** for notes, or **Output** for shared facts and revision history. Stage selection returns to Output. |
 
 ### Operating limits to state accurately
 
@@ -269,16 +306,16 @@ The app is local and single-user: one API process, one worker, one globally runn
 
 **Stop** is a cooperative cancellation request; wait for its terminal outcome. **Retry** is explicit and creates a linked new task. Failed, cancelled, or stale proposals must not be presented as published output. Closing the browser is not cancellation.
 
-This demo does not detect live anomalies, compute a validated risk score, prove regulatory compliance, or connect to live bank/case systems. Its revision history is not a complete regulated audit-control implementation. The scenario's alert queue, advanced filters, and full operating model are not all implemented.
+This demo does not detect live anomalies, compute a validated risk score, prove regulatory compliance, or connect to live bank/case systems. Its revision history is not a complete regulated audit-control implementation. The alert list is four packaged fictional alerts: there is no live feed, assignment, triage write, or "no case needed" disposition, and the review-by date is only a reminder. Other scenario features, such as advanced filters and the full operating model, are not implemented.
 
 The matched official A2UI packages retain an upstream Zod dependency advisory, **GHSA-mrhx-c7xc-m3w5**. Fixed-template validation and size/depth limits are safeguards, not a claim that the advisory is resolved. See the README for the dependency disclosure.
 
 ### Source material and maintenance
 
-**README.md** is the operational source for installation, configuration, commands, limitations, and validation. The Markdown and PDF versions of this manual contain the same demonstration content.
+**README.md** is the operational source for installation, configuration, commands, limitations, and validation. The English pair is `demonstration-manual.md` / `demonstration-manual.pdf`; the Korean, Japanese, and Chinese pairs use the `.ko`, `.ja`, and `.zh` suffixes. Each PDF contains its Markdown edition's demonstration content. The translated guides retain English UI labels so presenters can find the actual controls; they do not imply a localized app.
 
 - Scenario narrative and intended process: `docs\scenario\scenario.md` and `docs\scenario\process.md`.
-- Implemented design: `docs\superpowers\specs\2026-10-28-investigation-evidence-desk-design.md`.
+- Implemented design: `docs\superpowers\specs\2026-10-28-investigation-evidence-desk-design.md` and `docs\superpowers\specs\2026-10-29-alert-first-investigation-start-design.md`.
 - Protocol design background: `docs\research\ag-ui-a2ui-integration.md`.
 - Executable browser acceptance: `web\e2e\investigation-workflow.spec.ts`.
 

@@ -104,8 +104,10 @@ investigations = Table(
     Column("model_id", String, nullable=False),
     Column("revision", Integer, nullable=False),
     Column("state", JSON, nullable=False),
+    Column("alert_id", String, nullable=True),
     UniqueConstraint("owner_id", "chat_id"),
     UniqueConstraint("owner_id", "creation_request_id"),
+    UniqueConstraint("owner_id", "alert_id", name="uq_investigations_owner_alert"),
 )
 investigation_commands = Table(
     "investigation_commands", metadata, *scoped_columns(),

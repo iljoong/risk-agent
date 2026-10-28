@@ -40,6 +40,15 @@ export function StageEditor({ snapshot, stage, busy, onCommand }: {
   snapshot: Investigation; stage: Stage; busy: boolean; onCommand: OnCommand
 }) {
   const output = snapshot.outputs[stage]
+  if (stage === 'detect' && snapshot.original_alert.question) {
+    const alert = snapshot.original_alert
+    return <section className="investigation-output">
+      <h2>{stageNames.detect} <small>Read-only</small></h2>
+      <p>Alert {alert.id}: <strong>{alert.priority}</strong> priority. {alert.trigger}.</p>
+      <p>Detection came from the existing fictional AML system, so nothing needs review here. The original priority cannot be changed.</p>
+      <button disabled={busy || snapshot.current_stage === 'investigate'} onClick={() => { void onCommand('select_stage', { stage_id: 'investigate' }, snapshot.revision).catch(() => {}) }}>Continue to Investigate</button>
+    </section>
+  }
   return <section className="investigation-output">
     <h2>{stageNames[stage]} output <small>Version {output.version}</small></h2>
     <p>{output.needs_review ? 'Re-review required' : 'Acknowledged'}; evidence: {output.evidence_ids.join(', ') || 'No references yet'}</p>

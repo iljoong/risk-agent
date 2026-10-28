@@ -14,7 +14,7 @@ def test_migrations_are_versioned_and_preserve_existing_chats(settings):
     second = Repository(settings)
     assert second.list_chats("a")[0]["id"] == chat["id"]
     with second.db.engine.connect() as connection:
-        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0002"
+        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0003"
     second.db.engine.dispose()
 
 

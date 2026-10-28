@@ -58,31 +58,31 @@ class TestProvider:
             }), ToolContext(request.scope, request.run_id, request.task_id))
             yield AgentEvent(type="text_delta", text="Analysis updated using the current amended investigation context.")
         elif request.allow_tools:
-            for text in ("Reading requirements", "Drafting slides", "Checking evidence"):
+            for text in ("Reading sources", "Drafting a report", "Checking evidence"):
                 yield AgentEvent(type="stage", text=text)
                 await asyncio.sleep(2 if "cancellable" in question.lower() else 0.4)
             html = (
                 "<!doctype html><html><head><style>body{font-family:Arial;background:#f6f8f3;margin:0}"
                 "section{padding:40px;background:#173b31;color:white;min-height:320px;margin:20px;"
                 "border-radius:8px}h1{font-size:32px}p{line-height:1.8}</style></head><body>"
-                "<section><p>Proposal draft</p><h1>A response built around your requirements</h1>"
-                "<p>RFP.pdf, page 1: Encryption and a delivery plan are required.</p>"
-                "<p>Needs confirmation: supplier certifications and delivery commitments.</p></section>"
-                "<section><h1>Evidence gaps</h1><p>Needs confirmation: supporting compliance evidence.</p>"
-                "<p>Source: RFP.pdf, page 1</p></section></body></html>"
+                "<section><p>Synthetic review draft</p><h1>A summary grounded in your sources</h1>"
+                "<p>review-notes.pdf, page 1: Supporting records need review.</p>"
+                "<p>Needs confirmation: source completeness and supporting records.</p></section>"
+                "<section><h1>Evidence gaps</h1><p>No financial or compliance finding has been verified.</p>"
+                "<p>Source: review-notes.pdf, page 1</p></section></body></html>"
             )
             ArtifactService(self.repo).publish(
-                request.scope, request.run_id, request.task_id, html, "RFP response draft"
+                request.scope, request.run_id, request.task_id, html, "Evidence review draft"
             )
             yield AgentEvent(
-                type="text_delta", text="Your draft is ready. Needs confirmation: supplier certifications."
+                type="text_delta", text="Your draft is ready. Needs confirmation: supporting records."
             )
         else:
             has_artifact = any(
                 message.content.startswith("UNTRUSTED SAVED ARTIFACT:") for message in request.messages
             )
             answer = (
-                ("The saved draft ", "(Version 1) needs supporting evidence. ", "Source: RFP.pdf, page 1.")
+                ("The saved draft ", "(Version 1) needs supporting evidence. ", "Source: review-notes.pdf, page 1.")
                 if has_artifact
                 else ("No saved artifact is present in this request.",)
             )
@@ -99,7 +99,7 @@ def settings():
     return load_settings(
         {
             "APP_MODELS": json.dumps(models()),
-            "APP_DATA_DIR": sys.argv[2] if len(sys.argv) > 2 else str(ROOT / ".data" / "e2e" / "investigation-evidence-desk"),
+            "APP_DATA_DIR": sys.argv[2] if len(sys.argv) > 2 else str(ROOT / ".data" / "e2e" / "rci-agent"),
             "APP_PROJECT_DIR": str(ROOT),
             "APP_FRONTEND_ORIGIN": "http://127.0.0.1:18962",
         }
@@ -120,8 +120,8 @@ if __name__ == "__main__":
     else:
         config = settings()
         config.data_dir.mkdir(parents=True, exist_ok=True)
-        fixture = canvas.Canvas(str(config.data_dir / "RFP.pdf"))
-        fixture.drawString(72, 720, "RFP requires encryption and a delivery plan.")
+        fixture = canvas.Canvas(str(config.data_dir / "review-notes.pdf"))
+        fixture.drawString(72, 720, "Synthetic review notes: supporting records need review.")
         fixture.showPage()
         fixture.save()
         repo = Repository(config)
