@@ -16,7 +16,7 @@ class InvestigationProjection:
     def snapshot_with_watermark(self, scope: Scope) -> tuple[dict, int]:
         self.repo.get_chat(scope)
         with self.repo.db.transaction() as connection:
-            snapshot = copy.deepcopy(self.service.row(connection, scope)["state"])
+            snapshot = copy.deepcopy(self.service.project(self.service.row(connection, scope)["state"]))
             sequence = connection.execute(select(func.max(investigation_ui_events.c.id)).where(
                 self.repo.owned(investigation_ui_events, scope),
             )).scalar() or 0

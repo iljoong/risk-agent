@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 STAGES = ("detect", "investigate", "gather_evidence", "analyze", "human_review", "decision")
+MAX_UI_EVENT_BYTES = 2_000_000
 Stage = Literal["detect", "investigate", "gather_evidence", "analyze", "human_review", "decision"]
 Action = Literal[
     "amend_output", "amend_fact", "acknowledge_stage", "select_stage", "review_note",

@@ -59,3 +59,29 @@ def test_snapshot_watermark_and_projection_replay_are_consistent_and_scoped(repo
         projection.read_ui_events(Scope("a", other["chat_id"]), cursor)
     with pytest.raises(Conflict):
         projection.read_ui_events(scope, 999999)
+
+
+def test_large_amendment_history_has_bounded_frames_and_scoped_revision_pages(client):
+    import json
+
+    chat_id = client.post("/api/investigations", json={"model_id": "openai", "client_request_id": "long-history"}).json()["chat_id"]
+    path = f"/api/chats/{chat_id}/investigation"
+    for index in range(25):
+        response = client.post(f"{path}/actions", json={
+            "client_request_id": f"edit-{index}", "expected_revision": index + 1, "action": "amend_output",
+            "payload": {"stage_id": "analyze", "text": "界" * 11996 + f"{index:04}", "reason": "Correct interpretation"},
+        })
+        assert response.status_code == 200
+    state = client.get(path).json()["snapshot"]
+    assert len(state["history"]) <= 20
+    assert all("before" not in record and "after" not in record for record in state["history"])
+    from skill_chat.investigations.projection import InvestigationProjection
+    repo = client.app.state.service.repo
+    frames = InvestigationProjection(repo).read_ui_events(Scope("a", chat_id), 0)
+    assert max(len(json.dumps(frame["payload"])) for frame in frames) < 2_000_000
+    page = client.get(f"{path}/history").json()
+    assert len(page["records"]) == 10
+    assert page["records"][0]["after"].endswith("0024")
+    older = client.get(f"{path}/history?before={page['next_before']}").json()
+    assert older["records"][0]["revision"] < page["records"][-1]["revision"]
+    assert client.get(f"{path}/history", headers={"x-owner": "b"}).status_code == 404

@@ -9,12 +9,16 @@ export interface Source {
   source_id: string; title: string; status: string; snapshot_at: string | null; version: string | null;
   coverage: string; retrieved_at?: string; data?: Record<string, unknown>
 }
+export interface RevisionRecord {
+  actor: string; action: string; revision: number; timestamp: number; reason?: string;
+  before?: string; after?: string; stage_id?: Stage
+}
 export interface Investigation {
   chat_id: string; case_id: string; connector: 'demo'; revision: number; current_stage: Stage;
   original_alert: { id: string; priority: string; trigger: string };
   sources: Source[]; shared_facts: { beneficiary_description: string };
   outputs: Record<string, StageOutput>;
-  history: { actor: string; action: string; revision: number; timestamp: number; reason?: string; before?: string; after?: string; stage_id?: Stage }[];
+  history: RevisionRecord[];
   review: { reviewed: boolean; rationale: string; prepared_note: string | null };
   clarification: Record<string, unknown> | null; external_status: 'unconfirmed'; prepared: boolean;
   transactions: { id: string; timestamp: string; direction: string; amount_gbp: number; counterparty: string; reference: string }[];

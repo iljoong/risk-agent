@@ -12,10 +12,11 @@ export class InvestigationEventDecoder {
   discardPartialFrame() { this.buffer = '' }
   push(chunk: string) {
     this.buffer = (this.buffer + chunk).replace(/\r\n/g, '\n')
-    if (this.buffer.length > 2_000_000) throw new Error('Investigation event exceeds the size limit.')
     const frames = this.buffer.split('\n\n')
     this.buffer = frames.pop() ?? ''
+    if (this.buffer.length > 2_000_000) throw new Error('Investigation event exceeds the size limit.')
     return frames.flatMap(frame => {
+      if (frame.length > 2_000_000) throw new Error('Investigation event exceeds the size limit.')
       const lines = frame.split('\n')
       const data = lines.filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n')
       if (!data) return []

@@ -9,12 +9,13 @@ export function ReviewPanel({ snapshot, busy, onCommand }: { snapshot: Investiga
     <h2>Review & record</h2>
     <p>Original AML priority: {snapshot.original_alert.priority}. Agent recommendations do not change this alert.</p>
     <p>Remaining gaps: invoice unavailable (GAP-01); previous case restricted (GAP-02). No external case decision is executed.</p>
+    {!snapshot.prepared && <p className="investigation-warning">Prepare the investigation evidence before reviewing or exporting a note.</p>}
     {stale && <p className="investigation-warning">Acknowledge all affected stage outputs before reviewing the note.</p>}
     <label>Analyst rationale<textarea value={rationale} onChange={event => setRationale(event.target.value)} maxLength={4000} rows={3} /></label>
-    <button disabled={busy || stale || !rationale.trim()} onClick={() => { void onCommand('review_note', { rationale }, snapshot.revision).catch(() => {}) }}>Mark note reviewed</button>
-    <button disabled={busy || !snapshot.review.reviewed} onClick={() => { void onCommand('prepare_note', {}, snapshot.revision).catch(() => {}) }}>Prepare case note</button>
+    <button disabled={busy || !snapshot.prepared || stale || !rationale.trim()} onClick={() => { void onCommand('review_note', { rationale }, snapshot.revision).catch(() => {}) }}>Mark note reviewed</button>
+    <button disabled={busy || !snapshot.prepared || !snapshot.review.reviewed} onClick={() => { void onCommand('prepare_note', {}, snapshot.revision).catch(() => {}) }}>Prepare case note</button>
     <p>External saving / approval: unconfirmed</p>
-    {snapshot.review.prepared_note && <>
+    {snapshot.prepared && snapshot.review.reviewed && snapshot.review.prepared_note && <>
       <pre className="prepared-note">{snapshot.review.prepared_note}</pre>
       <button onClick={() => { void navigator.clipboard.writeText(snapshot.review.prepared_note!).then(() => setCopied('Copied. External saving / approval remains unconfirmed.')).catch(() => setCopied('Copy unavailable. Select and copy the note text.')) }}>Copy case note</button>
       <p role="status">{copied}</p>

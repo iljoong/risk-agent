@@ -11,10 +11,16 @@
 **Spec:** `docs\superpowers\specs\2026-10-28-investigation-evidence-desk-design.md` (approved by user on 2026-10-28).
 
 **Execution status:** Tasks 1-7 implemented in native execution on the approved
-feature branch. Offline verification: 119 backend tests passed (11 live/runtime
-tests deselected), mypy/ruff passed, 21 frontend unit tests passed, frontend
-lint/build passed, and all 8 Playwright tests passed. Final whole-branch review
-is pending. The checklists below preserve the original implementation plan.
+feature branch. Final offline verification: 121 backend tests passed (11
+live/runtime tests deselected), mypy/ruff passed, 22 frontend unit tests passed,
+frontend lint/build passed, and all 8 Playwright tests passed. The single fresh
+whole-branch review is complete: retained stage drafts, bounded projections with
+paged full revision history, and evidence-backed review/export gates address all
+three findings. Browser acceptance now waits for the new clarification task,
+not the preceding task's result, and checks actual stage acknowledgment rather
+than a transient busy state. The investigation lifecycle also passed three
+consecutive focused browser runs. Live inference remains unverified. The
+checklists below preserve the original implementation plan.
 
 ## Global Constraints
 

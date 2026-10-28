@@ -43,3 +43,15 @@ it('blocks review of stale outputs and does not imply an external approval', asy
   await waitFor(() => expect(screen.getByRole('button', { name: 'Mark note reviewed' })).toBeDisabled())
   expect(screen.getByText(/External saving \/ approval: unconfirmed/)).toBeInTheDocument()
 })
+
+it('preserves a stage amendment and reason while inspecting other stages', async () => {
+  const user = userEvent.setup()
+  render(<InvestigationWorkbench snapshot={fixture()} busy={false} onCommand={vi.fn()} conversation={null} onDirection={vi.fn()} />)
+  await user.clear(screen.getByRole('textbox', { name: 'Stage output' }))
+  await user.type(screen.getByRole('textbox', { name: 'Stage output' }), 'My pending scope')
+  await user.type(screen.getByRole('textbox', { name: 'Reason for stage amendment' }), 'Compare with analysis')
+  await user.click(screen.getByRole('button', { name: /4 Analyze/ }))
+  await user.click(screen.getByRole('button', { name: /2 Investigate/ }))
+  expect(screen.getByRole('textbox', { name: 'Stage output' })).toHaveValue('My pending scope')
+  expect(screen.getByRole('textbox', { name: 'Reason for stage amendment' })).toHaveValue('Compare with analysis')
+})

@@ -52,8 +52,9 @@ def test_amendments_preserve_history_and_invalidate_dependent_review(repository)
     })
     state = service.get(scope)
     assert state["outputs"]["analyze"]["needs_review"]
-    assert state["history"][-1]["before"] == before
-    assert state["history"][-1]["after"] == "Beneficiary not observed in available history."
+    record = service.history(scope)["records"][0]
+    assert record["before"] == before
+    assert record["after"] == "Beneficiary not observed in available history."
     assert state["original_alert"]["priority"] == "High"
     with pytest.raises(Conflict):
         command(service, scope, "review_note", {"rationale": "Review with open gaps"})
@@ -61,10 +62,17 @@ def test_amendments_preserve_history_and_invalidate_dependent_review(repository)
         command(service, scope, "amend_output", {"stage_id": "analyze", "text": "Changed", "reason": " "}, "bad")
 
 
-def test_shared_fact_change_invalidates_review_and_prepared_note(repository):
+async def test_shared_fact_change_invalidates_review_and_prepared_note(repository):
+    from test_investigation_connector import NoInference, prepare
+
+    from skill_chat.extensions.registry import build_registry
     from skill_chat.investigations.schemas import STAGES
+    from skill_chat.tasks.worker import Worker
 
     service, scope = create_investigation(repository)
+    registry = build_registry(repository)
+    prepare(service, scope, registry)
+    await Worker(repository, registry, NoInference()).run_once()
     for index, stage in enumerate(STAGES):
         command(service, scope, "acknowledge_stage", {"stage_id": stage}, f"ack-{index}")
     command(service, scope, "review_note", {"rationale": "Both material gaps remain acknowledged."}, "review")
@@ -79,3 +87,16 @@ def test_shared_fact_change_invalidates_review_and_prepared_note(repository):
     assert all(item["needs_review"] for item in state["outputs"].values())
     with pytest.raises(Conflict):
         command(service, scope, "prepare_note", {}, "not-reviewed")
+
+
+def test_unprepared_placeholders_cannot_be_exported_as_reviewed_evidence(repository):
+    from skill_chat.investigations.schemas import STAGES
+
+    service, scope = create_investigation(repository)
+    for stage in STAGES:
+        command(service, scope, "acknowledge_stage", {"stage_id": stage}, f"ack-{stage}")
+    with pytest.raises(Conflict, match="Prepare"):
+        command(service, scope, "review_note", {"rationale": "Checked placeholders."}, "review")
+    with pytest.raises(Conflict, match="Prepare"):
+        command(service, scope, "prepare_note", {}, "export")
+    assert "E-01" not in service.note(service.get(scope))

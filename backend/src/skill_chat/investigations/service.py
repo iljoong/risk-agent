@@ -1,4 +1,5 @@
 import copy
+import json
 import time
 from uuid import uuid4
 
@@ -8,6 +9,7 @@ from sqlalchemy import insert, select, update
 
 from skill_chat.contracts import Conflict, InvalidInput, NotFound, Scope, Unavailable
 from skill_chat.investigations.schemas import (
+    MAX_UI_EVENT_BYTES,
     STAGES,
     AmendFact,
     AmendOutput,
@@ -49,7 +51,30 @@ class InvestigationService:
     def get(self, scope: Scope) -> dict:
         self.repo.get_chat(scope)
         with self.repo.db.engine.connect() as connection:
-            return copy.deepcopy(self.row(connection, scope)["state"])
+            return copy.deepcopy(self.project(self.row(connection, scope)["state"]))
+
+    @staticmethod
+    def project(state: dict) -> dict:
+        fields = ("actor", "action", "revision", "timestamp", "stage_id", "reason")
+        return {**state, "history": [
+            {key: record[key] for key in fields if key in record}
+            for record in state["history"][-20:]
+        ]}
+
+    def history(self, scope: Scope, before: int | None = None, limit: int = 10) -> dict:
+        if not 1 <= limit <= 10:
+            raise InvalidInput("Revision history page size must be between 1 and 10")
+        self.repo.get_chat(scope)
+        with self.repo.db.engine.connect() as connection:
+            self.row(connection, scope)
+            query = select(investigation_revisions).where(self.repo.owned(investigation_revisions, scope))
+            if before is not None:
+                query = query.where(investigation_revisions.c.revision < before)
+            rows = list(connection.execute(
+                query.order_by(investigation_revisions.c.revision.desc()).limit(limit + 1),
+            ).mappings())
+            return {"records": [row["record"] for row in rows[:limit]],
+                    "next_before": rows[limit - 1]["revision"] if len(rows) > limit else None}
 
     def create(self, owner_id: str, model_id: str, client_request_id: str) -> dict:
         if not self.repo.settings.model(model_id):
@@ -92,11 +117,14 @@ class InvestigationService:
             return {"chat_id": chat_id, "revision": 1}
 
     def emit(self, connection, scope: Scope, state: dict) -> int:
+        payload = StateSnapshotEvent(type=EventType.STATE_SNAPSHOT, snapshot=self.project(state)).model_dump(
+            mode="json", by_alias=True, exclude_none=True,
+        )
+        if len(json.dumps(payload, ensure_ascii=False).encode()) + 128 > MAX_UI_EVENT_BYTES:
+            raise InvalidInput("Investigation projection exceeds the UI event size limit")
         result = connection.execute(insert(investigation_ui_events).values(
             owner_id=scope.owner_id, chat_id=scope.chat_id, created=time.time(),
-            payload=StateSnapshotEvent(type=EventType.STATE_SNAPSHOT, snapshot=state).model_dump(
-                mode="json", by_alias=True, exclude_none=True,
-            ),
+            payload=payload,
         ))
         sequence = int(result.inserted_primary_key[0])
         clarification = state.get("clarification")
@@ -117,6 +145,7 @@ class InvestigationService:
         state["revision"] += 1
         record = {**record, "revision": state["revision"], "timestamp": time.time()}
         state["history"].append(record)
+        state["history"] = self.project(state)["history"]
         state = InvestigationSnapshot.model_validate(state).model_dump()
         connection.execute(update(investigations).where(self.repo.owned(investigations, scope)).values(
             revision=state["revision"], state=state,
@@ -136,6 +165,13 @@ class InvestigationService:
 
     @staticmethod
     def note(state: dict) -> str:
+        gaps = [f"{item['id']}: {item['title']}" for item in state["evidence"]
+                if item["kind"] in ("Missing information", "Access limitation")]
+        references = [item["id"] for item in state["evidence"]]
+        references.extend(
+            f"{source['source_id']} / {source['version']}" for source in state["sources"]
+            if source["status"] == "available" and source.get("version")
+        )
         parts = [
             f"CASE-1041 / Harbour Components Ltd / revision {state['revision']}",
             "FICTIONAL DEMO RECORDS. Draft for human review, not a financial or compliance determination.",
@@ -147,8 +183,8 @@ class InvestigationService:
         )
         parts.extend([
             f"Analyst rationale: {state['review']['rationale']}",
-            "Remaining gaps: GAP-01 invoice missing; GAP-02 prior case restricted.",
-            "References: E-01 through E-04; G-AML-07 v3; L-01 v2 (fictional policies).",
+            f"Remaining recorded gaps: {'; '.join(gaps) or 'No evidence collected.'}",
+            f"References: {'; '.join(references) or 'No references collected.'}",
             "External saving / approval: unconfirmed. Copying is not saving, closing or approving.",
         ])
         return "\n\n".join(parts)
@@ -315,12 +351,16 @@ class InvestigationService:
             elif command.action == "select_stage":
                 state["current_stage"] = payload["stage_id"]
             elif command.action == "review_note":
+                if not state["prepared"]:
+                    raise Conflict("Prepare the investigation evidence before reviewing the note")
                 if any(output["needs_review"] for output in state["outputs"].values()):
                     raise Conflict("Acknowledge affected stage outputs before reviewing the note")
                 state["review"] = {"reviewed": True, "rationale": payload["rationale"], "prepared_note": None}
                 state["current_stage"] = "human_review"
                 record["rationale"] = payload["rationale"]
             elif command.action == "prepare_note":
+                if not state["prepared"]:
+                    raise Conflict("Prepare the investigation evidence before exporting a note")
                 if not state["review"]["reviewed"]:
                     raise Conflict("Review the current note before preparing it")
                 state["current_stage"] = "decision"

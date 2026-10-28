@@ -1,5 +1,5 @@
 import { API_BASE } from '../api/client'
-import type { InvestigationAction, StateEnvelope } from './types'
+import type { InvestigationAction, RevisionRecord, StateEnvelope } from './types'
 
 export class InvestigationError extends Error {
   readonly status: number
@@ -19,6 +19,8 @@ export const investigations = {
   create: (model_id: string, client_request_id: string) =>
     request<{ chat_id: string; revision: number }>('/api/investigations', { model_id, client_request_id }),
   get: (chat: string, signal?: AbortSignal) => request<StateEnvelope>(`/api/chats/${chat}/investigation`, undefined, signal),
+  history: (chat: string, before?: number) => request<{ records: RevisionRecord[]; next_before: number | null }>(
+    `/api/chats/${chat}/investigation/history${before === undefined ? '' : `?before=${before}`}`),
   action: (chat: string, action: InvestigationAction, payload: Record<string, unknown>, expected_revision: number) =>
     request<{ revision: number; sequence: number; turn_id?: string; task_id?: string }>(`/api/chats/${chat}/investigation/actions`, {
       client_request_id: crypto.randomUUID(), expected_revision, action, payload,

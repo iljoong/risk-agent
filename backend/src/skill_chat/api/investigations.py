@@ -37,6 +37,12 @@ def action(chat_id: str, body: InvestigationCommand, request: Request):
     )
 
 
+@router.get("/api/chats/{chat_id}/investigation/history")
+def history(chat_id: str, request: Request, before: int | None = Query(default=None, gt=0),
+            limit: int = Query(default=10, ge=1, le=10)):
+    return InvestigationService(service(request).repo).history(scope(request, chat_id), before, limit)
+
+
 @router.get("/api/chats/{chat_id}/investigation/events")
 async def events(chat_id: str, request: Request, after: int = Query(default=0, ge=0)):
     owner = scope(request, chat_id)
@@ -53,7 +59,10 @@ async def events(chat_id: str, request: Request, after: int = Query(default=0, g
             frames = projection.read_ui_events(owner, cursor)
             for frame in frames:
                 cursor = frame["id"]
-                yield f"id: {cursor}\ndata: {json.dumps(frame['payload'])}\n\n"
+                payload = frame["payload"]
+                if payload["type"] == "STATE_SNAPSHOT":
+                    payload = {**payload, "snapshot": projection.service.project(payload["snapshot"])}
+                yield f"id: {cursor}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
             if not frames:
                 yield ": investigation heartbeat\n\n"
             await asyncio.sleep(0.5)
