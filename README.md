@@ -70,13 +70,25 @@ Selected skills stay active for follow-up replies, including clarification answe
 
 `/health/live` checks the API process. `/health/ready` also requires a recent worker heartbeat; it returns 503 when the worker is missing. Readiness is not a cloud inference test. Background jobs remain queued if the worker is unavailable.
 
-### Throwaway investigation UI prototype
+### Investigation evidence desk
 
-Run `npm --prefix .\web run prototype` to open **http://127.0.0.1:5175/?prototype=investigation&variant=C**.
-**Selected design: C, the evidence-first desk.** Compare it with **A** (top journey and split conversation/output) and **B** (vertical workflow rail) using the floating arrow switcher.
-The development-only prototype uses the fictional `docs\scenario` pack, not real chats or live sources. Amend any stage output with a rationale; shared context and the note update, while dependent stages require re-review.
-All edits and demonstration history live only in browser memory and disappear on reload. Agent replies are simulations; AG-UI/A2UI transport, backend persistence and external saving/approvals are not implemented.
-The normal app is unchanged without `?prototype=investigation`; production builds exclude the prototype.
+Back up `.data` before upgrading an existing installation. Restore both dependency locks using the setup commands, then restart **both API and worker**: the investigation migration, registered tools and extension fingerprint must match. No fourth process is needed.
+
+Choose **New investigation** in **Investigation sessions** to create an independent CASE-1041 demonstration. **New conversation** retains ordinary chat, PDFs, skills and artifacts. The evidence-first desk implements the [approved investigation design](docs/superpowers/specs/2026-10-28-investigation-evidence-desk-design.md); the selected throwaway prototype remains in Git on `prototype/investigation-workbench`, not as an application entry point.
+
+**Prepare investigation** queues the backend demo connector. It retrieves packaged fictional records asynchronously without cloud inference. This is a mock of live retrieval, not a connection to a financial system. The transaction comparison is GBP 48,000 incoming, GBP 45,500 outgoing, 94.79% over 56 minutes; this does not establish intent or fund lineage. SRC-04 remains restricted and SRC-07 remains missing. Source inspection distinguishes the fixture snapshot/version from the retrieval timestamp.
+
+The six-stage tracker stays above the working area. Clicking a stage inspects its output; **Make current stage** changes workflow state explicitly. Amend any output with a reason, or edit the shared beneficiary description. Amendments are persisted and enter subsequent agent context; affected reviews and prepared notes are invalidated. Original source records and the original High AML alert are not overwritten. If another tab changes the revision, the local draft is retained for comparison and explicit reapplication.
+
+**Draft a challenge** and **Draft a policy check** populate the existing composer; **Send message** runs the actual configured agent and may be billable. Its scoped output proposals become canonical only after successful execution. Preparation alone is inference-free. Cancelling or closing the browser does not publish an incomplete proposal. Oversized amended context fails explicitly; narrow the output or select a larger configured context budget.
+
+**Clarify investigation scope** opens a restricted official A2UI v0.9 surface. Its validated response queues one new durable turn; no worker waits for the user. Pending/resolved/cancelled status survives reopening. A plain accessible form is available if rendering fails. The pilot permits only fixed text/layout/input/submit components: 64 KiB, 100 components, depth 12, one pending surface, and answers up to 16 KiB plus the selected model's budget. It does not permit arbitrary agent-authored screens.
+
+AG-UI `STATE_SNAPSHOT` frames project authoritative state. `ACTIVITY_SNAPSHOT` uses the bridge convention `activityType: "a2ui-surface"` with complete `content.a2ui_operations`, surface revision and status. Passive subscriptions resume scoped delivery cursors; invalid cursors rehydrate the snapshot without restarting work. Conversation text retains the existing turn stream; this is not full AG-UI text/tool lifecycle support.
+
+Before preparing a case note, acknowledge all affected stage outputs and enter an analyst rationale in **Review & record**. Human proposed disposition can be recorded by amending the Decision output. Preparing or copying a note does not save to another system, close a case, approve a disposition, or execute a financial action; external saving/approval remains **unconfirmed**.
+
+The matched A2UI packages require Zod 3.25.76, which still has an upstream constrained-collection resource-exhaustion advisory (GHSA-mrhx-c7xc-m3w5). Surface structure is checked against the fixed bounded template before renderer/schema processing; this is not a claim that the dependency advisory is resolved. DOMPurify is overridden to patched 3.4.17; the restricted catalog renders plain React text, not Markdown/HTML.
 
 ### Persistence and task behavior
 
@@ -116,6 +128,8 @@ For custom tools, create a Python module in the project-root `tools` folder and 
 `context.scope` and `context.skill_id` are injected by the server. Arguments must not contain owner/chat/skill overrides or unrestricted paths. Installed tool modules are trusted developer code, not sandboxed user plugins. Do not install untrusted modules.
 
 Users cannot invoke tools directly. The agent gets only registered tools, with general shell/filesystem/network capabilities disabled. Built-in tools are `read_document`, `read_artifact`, `read_skill_reference`, `publish_html`, and `webiq_search`. Readers return at most 2,000 characters per call and accept a `character_offset`; follow `next_offset` and PDF `next_page` metadata to continue reading. Dense pages and large saved drafts remain accessible without exceeding the tool response bound.
+
+Investigation runs also receive `read_investigation` and `propose_investigation_output`. They use server-owned session scope and current task/revision checks; they cannot change the original alert, human review status or external systems.
 
 `publish_html` returns a chat-scoped `download_url` for the final answer; it becomes downloadable when the task succeeds. The `lgu-rfp` skill includes a Workroom mode using these tools, ordinary chat clarification, and a static Korean schedule/D-Day report. Workroom cannot run its bundled Python validator or JavaScript assets; reports must disclose those limits rather than claim interactive or automatic validation.
 

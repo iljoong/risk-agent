@@ -7,6 +7,7 @@ from pathlib import Path
 
 import uvicorn
 from reportlab.pdfgen import canvas
+from sqlalchemy import delete
 from test_config import models
 
 from skill_chat.api.app import create_app
@@ -15,7 +16,10 @@ from skill_chat.config import load_settings
 from skill_chat.contracts import AgentEvent, Unavailable
 from skill_chat.extensions.registry import build_registry
 from skill_chat.storage.repository import Repository
+from skill_chat.storage.models import turns, worker_status
 from skill_chat.tasks.worker import Worker
+from skill_chat.tools.context import ToolContext
+from skill_chat.tools.investigations import investigation_tools
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -40,6 +44,19 @@ class TestProvider:
                 type="text_delta",
                 text='<img src=x onerror="document.documentElement.dataset.unsafeExecuted=1">\n\n[Unsafe link](javascript:alert(1))',
             )
+        elif request.allow_tools and self.repo.get(turns, request.scope, request.run_id)["request"].get("investigation"):
+            execution = self.repo.get(turns, request.scope, request.run_id)["request"]["investigation"]
+            yield AgentEvent(type="stage", text="Checking the current investigation revision")
+            await asyncio.sleep(0.3)
+            tool = next(item for item in investigation_tools(self.repo) if item.name == "propose_investigation_output")
+            evidence_ids = [item["id"] for item in execution["snapshot"]["evidence"] if item["id"] in ("E-03", "GAP-01")]
+            await tool.handler(tool.arguments.model_validate({
+                "expected_revision": execution["base_revision"], "stage_id": "analyze",
+                "text": "Test-provider draft: a plausible supplier explanation remains unverified. "
+                        "Timing alone does not establish intent; the invoice gap remains open [E-03, GAP-01].",
+                "evidence_ids": evidence_ids,
+            }), ToolContext(request.scope, request.run_id, request.task_id))
+            yield AgentEvent(type="text_delta", text="Analysis updated using the current amended investigation context.")
         elif request.allow_tools:
             for text in ("Reading requirements", "Drafting slides", "Checking evidence"):
                 yield AgentEvent(type="stage", text=text)
@@ -108,4 +125,6 @@ if __name__ == "__main__":
         fixture.showPage()
         fixture.save()
         repo = Repository(config)
+        with repo.db.transaction() as connection:
+            connection.execute(delete(worker_status))
         uvicorn.run(create_app(config, TestProvider(repo)), host="127.0.0.1", port=18961)

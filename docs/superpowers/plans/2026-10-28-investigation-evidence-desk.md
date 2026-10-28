@@ -10,6 +10,12 @@
 
 **Spec:** `docs\superpowers\specs\2026-10-28-investigation-evidence-desk-design.md` (approved by user on 2026-10-28).
 
+**Execution status:** Tasks 1-7 implemented in native execution on the approved
+feature branch. Offline verification: 119 backend tests passed (11 live/runtime
+tests deselected), mypy/ruff passed, 21 frontend unit tests passed, frontend
+lint/build passed, and all 8 Playwright tests passed. Final whole-branch review
+is pending. The checklists below preserve the original implementation plan.
+
 ## Global Constraints
 
 - One API, one worker, one globally running background task and one active turn per chat; no fourth process.

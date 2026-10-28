@@ -1,7 +1,7 @@
 # Investigation evidence desk with demo connector
 
 Date: 2026-10-28
-Status: Approved by the user on 2026-10-28; implementation pending.
+Status: Approved and implemented on `feature/investigation-evidence-desk`; offline acceptance passed. Final whole-branch review pending.
 
 ## Intent and decisions
 

@@ -101,3 +101,20 @@ def test_investigation_context_never_silently_truncates_amendments(repository):
     state["outputs"]["investigate"]["text"] = "Very long scope " * 1000
     with pytest.raises(Unavailable, match="context"):
         build_investigation_context(state, 200)
+
+
+async def test_resolved_scope_runs_without_spending_context_on_renderer_operations(repository):
+    service, scope, registry = await setup_prepared(repository)
+    command(service, scope, "amend_output", {
+        "stage_id": "investigate", "text": "ANALYST AMENDED SCOPE", "reason": "Narrow checks",
+    })
+    command(service, scope, "request_clarification", {}, "ask")
+    pending = service.get(scope)["clarification"]
+    receipt = service.apply(scope, InvestigationCommand(
+        client_request_id="resolve", expected_revision=service.get(scope)["revision"], action="resolve_clarification",
+        payload={"clarification_id": pending["id"], "surface_revision": pending["surface_revision"],
+                 "answer": "Compare the supplier explanation, retaining the invoice gap."},
+    ), registry_fingerprint=registry.fingerprint)
+    await Worker(repository, registry, UpdatingGateway(repository)).run_once()
+    turn = repository.get(turns, scope, receipt["turn_id"])
+    assert turn["state"] == "succeeded", turn["error"]

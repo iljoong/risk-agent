@@ -16,6 +16,10 @@ For architectural rationale, consult
 plan in `docs\superpowers\plans`. These are historical design/execution records;
 check their claims against current code and tests before relying on them.
 
+The explicitly approved fictional investigation demo is specified in
+`docs\superpowers\specs\2026-10-28-investigation-evidence-desk-design.md`.
+It does not establish a live detector, financial integration or regulatory workflow.
+
 ## Change boundaries
 
 | Area | Where to work |
@@ -29,6 +33,7 @@ check their claims against current code and tests before relying on them.
 | HTML validation, publication and versioning | `backend\src\skill_chat\artifacts` |
 | Skill discovery and agent-only tool registration | `backend\src\skill_chat\extensions`, `backend\src\skill_chat\tools` |
 | UI and browser API/SSE contracts | `web\src`, especially `web\src\api` |
+| Investigation domain commands, demo sources, review state and AG-UI/A2UI projection | `backend\src\skill_chat\investigations`, `web\src\investigations` |
 | Developer-installed skill instructions, references and evaluations | `skills` |
 
 Keep API adapters thin and reuse the existing services and repository. Shared
@@ -73,6 +78,10 @@ Before editing a skill, read its `SKILL.md` and relevant bundled references.
 Frontmatter names must match directory names; the discovered identifier is
 authoritative. For example, the risk-analysis skill is `rfp-analysis`, not
 `rfp_analysis`. Preserve synthetic-data labels and source/evidence distinctions.
+- **Investigation demo:** preserve fictional labels, source gaps, immutable original
+  alert priority and unconfirmed external status. Apply edits through revisioned
+  scoped commands; publish staged agent output only on success. A2UI is a fixed,
+  bounded host-requested scope form, not arbitrary agent-authored HTML or actions.
 Update that skill's evaluation prompts when its expected behavior changes.
 
 Follow `README.md` and `backend\src\skill_chat\tools\context.py` for new tool

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { ClarificationSurface } from '../investigations/ClarificationSurface'
@@ -10,7 +11,7 @@ it('renders the restricted official A2UI surface and submits only the scope answ
   render(<ClarificationSurface activity={{
     id: 'scope1', surface_revision: 2, status: 'pending', question: 'Narrow scope',
     operations: buildScopeOperations('scope1', 2, 'Narrow scope'), answer: null,
-  }} busy={false} onResolve={onResolve} onCancel={vi.fn()} />)
+  }} busy={false} onResolve={onResolve} onCancel={vi.fn()} />, { wrapper: StrictMode })
   expect(screen.queryByText(/Plain form fallback/)).not.toBeInTheDocument()
   await user.type(await screen.findByRole('textbox', { name: 'Investigation scope' }), 'Compare the supplier explanation.')
   await user.click(screen.getByRole('button', { name: 'Apply scope and ask agent' }))

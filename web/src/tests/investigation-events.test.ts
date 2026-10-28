@@ -18,6 +18,10 @@ it('does not accept an invalid event type or a nonnumeric replay cursor', () => 
   expect(() => new InvestigationEventDecoder(0).push('id: junk\ndata: {"type":"STATE_SNAPSHOT","snapshot":{}}\n\n')).toThrow()
   expect(() => new InvestigationEventDecoder(0).push('id: 1\ndata: {"type":"pretend_success"}\n\n')).toThrow()
   expect(() => validateInvestigation({ revision: 1, outputs: {} })).toThrow()
+  const state = fixture()
+  state.sources = [{ source_id: 'SRC-04', title: 'Prior case', status: 'restricted',
+    snapshot_at: null, version: null, coverage: 'Authorized access required.' }]
+  expect(validateInvestigation(state).sources[0].source_id).toBe('SRC-04')
 })
 
 it('keeps independent replay cursors and handles a split CRLF', () => {

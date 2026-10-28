@@ -6,7 +6,7 @@ export const stageNames: Record<Stage, string> = {
 }
 export interface StageOutput { text: string; version: number; evidence_ids: string[]; needs_review: boolean }
 export interface Source {
-  id: string; title: string; status: string; snapshot_at: string | null; version: string | null;
+  source_id: string; title: string; status: string; snapshot_at: string | null; version: string | null;
   coverage: string; retrieved_at?: string; data?: Record<string, unknown>
 }
 export interface Investigation {

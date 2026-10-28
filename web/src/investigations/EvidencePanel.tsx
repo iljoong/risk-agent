@@ -4,7 +4,7 @@ import type { Investigation } from './types'
 const money = (amount: number) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(amount)
 export function EvidencePanel({ snapshot }: { snapshot: Investigation }) {
   const [sourceId, setSourceId] = useState<string | null>(null)
-  const source = snapshot.sources.find(item => item.id === sourceId)
+  const source = snapshot.sources.find(item => item.source_id === sourceId)
   return <section className="evidence-desk" aria-label="Investigation evidence">
     <div><h2>Transaction timeline</h2>
       {!snapshot.prepared && <p>Prepare the investigation to collect the permitted fictional source records.</p>}
@@ -22,10 +22,10 @@ export function EvidencePanel({ snapshot }: { snapshot: Investigation }) {
         {item.source_ids.map(id => <button key={id} onClick={() => setSourceId(id)}>Inspect {id}</button>)}
       </article>)}</div>
       <details><summary>All sources ({snapshot.sources.length})</summary>{snapshot.sources.map(item =>
-        <button key={item.id} onClick={() => setSourceId(item.id)}>{item.id}: {item.status}</button>)}</details>
-      {source && <section className="source-inspection" aria-label={`Source ${source.id}`}>
+        <button key={item.source_id} onClick={() => setSourceId(item.source_id)}>{item.source_id}: {item.status}</button>)}</details>
+      {source && <section className="source-inspection" aria-label={`Source ${source.source_id}`}>
         <button onClick={() => setSourceId(null)}>Close source</button>
-        <h3>{source.id}: {source.title}</h3><p>Status: {source.status}</p>
+        <h3>{source.source_id}: {source.title}</h3><p>Status: {source.status}</p>
         <p>Fixture snapshot: {source.snapshot_at ?? 'Unavailable'}; version: {source.version ?? 'Unavailable'}</p>
         <p>Retrieved: {source.retrieved_at ?? 'Not retrieved'}</p><p>{source.coverage}</p>
         <pre>{JSON.stringify(source.data ?? {}, null, 2)}</pre>

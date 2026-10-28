@@ -39,7 +39,7 @@ const snapshotSchema = z.object({
   shared_facts: z.object({ beneficiary_description: z.string() }),
   outputs: z.record(z.enum(stages), outputSchema),
   review: z.object({ reviewed: z.boolean(), rationale: z.string(), prepared_note: z.string().nullable() }),
-  sources: z.array(z.object({ id: z.string(), title: z.string(), status: z.string(),
+  sources: z.array(z.object({ source_id: z.string(), title: z.string(), status: z.string(),
     snapshot_at: z.string().nullable(), version: z.string().nullable(), coverage: z.string(),
     retrieved_at: z.string().optional(), data: z.record(z.string(), z.unknown()).optional() })).max(7),
   transactions: z.array(z.object({ id: z.string(), timestamp: z.string(), direction: z.string(),
