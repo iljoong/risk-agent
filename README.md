@@ -70,6 +70,14 @@ Selected skills stay active for follow-up replies, including clarification answe
 
 `/health/live` checks the API process. `/health/ready` also requires a recent worker heartbeat; it returns 503 when the worker is missing. Readiness is not a cloud inference test. Background jobs remain queued if the worker is unavailable.
 
+### Throwaway investigation UI prototype
+
+Run `npm --prefix .\web run prototype` to open **http://127.0.0.1:5175/?prototype=investigation&variant=A**.
+Compare **A** (top journey and split conversation/output), **B** (vertical workflow rail), and **C** (evidence-first desk) with the floating arrow switcher.
+The development-only prototype uses the fictional `docs\scenario` pack, not real chats or live sources. Amend any stage output with a rationale; shared context and the note update, while dependent stages require re-review.
+All edits and demonstration history live only in browser memory and disappear on reload. Agent replies are simulations; AG-UI/A2UI transport, backend persistence and external saving/approvals are not implemented.
+The normal app is unchanged without `?prototype=investigation`; production builds exclude the prototype.
+
 ### Persistence and task behavior
 
 SQLite, managed PDFs, artifacts, and isolated runtime directories live in `.data` by default. Set `APP_DATA_DIR` to change that location. API and worker must use the same configuration and data directory. Run one API process and one worker; multi-process API deployment is not supported. Packaged Alembic migrations run transactionally at startup. Back up `.data` before upgrading. Old unreferenced managed files are cleaned on startup within their owner/chat scope, with a sixty-second grace period for in-flight writes.
