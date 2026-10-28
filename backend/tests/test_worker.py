@@ -75,12 +75,13 @@ async def test_registry_change_does_not_run_old_job(repository, settings, tmp_pa
     assert "Extensions changed" in repository.get(turns, scope, turn["id"])["error"]
 
 
-async def test_rfp_skill_requires_a_processed_pdf_before_inference(repository):
+async def test_rfp_skill_requires_a_processed_pdf_before_inference(repository, tmp_path):
     from test_chat import QuestionGateway
 
-    from skill_chat.extensions.registry import build_registry
+    from skill_chat.extensions.registry import SkillDefinition
 
-    registry = build_registry(repository)
+    registry = discover_extensions(tmp_path / "skills", tmp_path / "tools")
+    registry.skills = (SkillDefinition("rfp-response", "rfp-response", "Historical test-only skill", tmp_path),)
     chat = repository.create_chat("a", "openai")
     scope = Scope("a", chat["id"])
     turn, _ = repository.create_turn(

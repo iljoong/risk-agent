@@ -11,6 +11,12 @@ from skill_chat.contracts import AgentRequest, AppError, Gateway, InvalidInput, 
 from skill_chat.documents.context import ContextBuilder
 from skill_chat.documents.ingestion import AttachmentService
 from skill_chat.extensions.registry import ExtensionRegistry, build_registry
+from skill_chat.investigations.connector import (
+    DemoInvestigationConnector,
+    InvestigationConnector,
+    collect_sources,
+)
+from skill_chat.investigations.service import InvestigationService
 from skill_chat.storage.models import artifacts, turns
 from skill_chat.storage.models import attachments as attachment_rows
 from skill_chat.storage.repository import Repository
@@ -20,12 +26,16 @@ logger = logging.getLogger(__name__)
 
 
 class Worker:
-    def __init__(self, repository: Repository, registry: ExtensionRegistry, gateway: Gateway):
+    def __init__(
+        self, repository: Repository, registry: ExtensionRegistry, gateway: Gateway,
+        connector: InvestigationConnector | None = None,
+    ):
         self.repo = repository
         self.registry = registry
         self.gateway = gateway
         self.tasks = TaskService(repository)
         self.id = uuid4().hex
+        self.connector = connector or DemoInvestigationConnector()
 
     async def execute(self, scope: Scope, task: dict):
         if task["fingerprint"] != self.registry.fingerprint:
@@ -34,6 +44,9 @@ class Worker:
             self.registry.get_skill(task["skill_id"])
         turn = self.repo.get(turns, scope, task["turn_id"])
         request = turn["request"]
+        if request.get("investigation", {}).get("operation") == "prepare":
+            await collect_sources(InvestigationService(self.repo), scope, task, self.connector, self.tasks)
+            return
         attachments = AttachmentService(self.repo)
         for attachment_id in request.get("attachment_ids", []):
             self.tasks.stage(scope, task["id"], "Reading attached PDF")

@@ -1,9 +1,10 @@
 import time
+from contextlib import nullcontext
 from uuid import uuid4
 
 from sqlalchemy import insert, select, update
 
-from skill_chat.contracts import Conflict, Scope, Unavailable
+from skill_chat.contracts import Conflict, NotFound, Scope, Unavailable
 from skill_chat.storage.models import artifacts, events, tasks, turns, worker_status
 from skill_chat.storage.repository import Repository
 
@@ -22,8 +23,8 @@ class TaskService:
         retry_of: str | None = None,
         *,
         expected_state: str = "routing",
+        connection=None,
     ) -> dict:
-        self.repo.get(turns, scope, turn_id)
         data = {
             "id": uuid4().hex,
             "owner_id": scope.owner_id,
@@ -41,15 +42,19 @@ class TaskService:
             "error": None,
             "finished": None,
         }
-        with self.repo.db.transaction() as connection:
-            changed = connection.execute(
+        with self.repo.db.transaction() if connection is None else nullcontext(connection) as conn:
+            if not conn.execute(select(turns.c.id).where(
+                self.repo.owned(turns, scope), turns.c.id == turn_id,
+            )).first():
+                raise NotFound("Turn not found in this session")
+            changed = conn.execute(
                 update(turns)
                 .where(self.repo.owned(turns, scope), turns.c.id == turn_id, turns.c.state == expected_state)
                 .values(state="queued", mode="background")
             )
             if changed.rowcount != 1:
                 raise Conflict("This turn no longer accepts work; it may have been stopped.")
-            connection.execute(insert(tasks).values(**data))
+            conn.execute(insert(tasks).values(**data))
         return data
 
     def get(self, scope: Scope, task_id: str) -> dict:
@@ -133,6 +138,9 @@ class TaskService:
             return
         if task["state"] == "cancel_requested":
             state = "cancelled"
+        from skill_chat.investigations.service import InvestigationService
+
+        InvestigationService(self.repo).publish_candidates(connection, scope, task, state)
         turn_values = {"state": state, "error": error}
         if answer is not None:
             turn_values["answer"] = answer

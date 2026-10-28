@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import time
+from contextlib import nullcontext
 from uuid import uuid4
 
 from sqlalchemy import delete, insert, select, update
@@ -148,11 +149,11 @@ class Repository:
             with self.db.transaction() as connection:
                 connection.execute(delete(chats).where(chats.c.id == chat["id"], chats.c.deleting == 1))
 
-    def create_turn(self, scope: Scope, request: dict) -> tuple[dict, bool]:
+    def create_turn(self, scope: Scope, request: dict, *, connection=None) -> tuple[dict, bool]:
         self.get_chat(scope)
-        with self.db.transaction() as connection:
+        with self.db.transaction() if connection is None else nullcontext(connection) as conn:
             existing = (
-                connection.execute(
+                conn.execute(
                     select(turns).where(
                         self.owned(turns, scope), turns.c.client_request_id == request["client_request_id"]
                     )
@@ -164,7 +165,7 @@ class Repository:
                 if existing["request"] != request:
                     raise Conflict("Request ID was reused with different content")
                 return dict(existing), False
-            if self.busy(connection, scope):
+            if self.busy(conn, scope):
                 raise Conflict("This chat already has active work")
             data = {
                 "id": uuid4().hex,
@@ -178,7 +179,7 @@ class Repository:
                 "answer": "",
                 "error": None,
             }
-            connection.execute(insert(turns).values(**data))
+            conn.execute(insert(turns).values(**data))
         return data, True
 
     def change(self, table, scope: Scope, object_id: str, **values):

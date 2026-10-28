@@ -19,6 +19,7 @@ from skill_chat.investigations.schemas import (
 )
 from skill_chat.storage.models import (
     chats,
+    investigation_candidates,
     investigation_commands,
     investigation_revisions,
     investigation_ui_events,
@@ -131,7 +132,86 @@ class InvestigationService:
         ])
         return "\n\n".join(parts)
 
-    def apply(self, scope: Scope, command: InvestigationCommand) -> dict:
+    def prepare(self, scope: Scope, command: InvestigationCommand, registry_fingerprint: str) -> dict:
+        if command.action != "prepare":
+            raise InvalidInput("Expected a preparation action")
+        return self.apply(scope, command, registry_fingerprint=registry_fingerprint)
+
+    def queue(self, connection, scope: Scope, state: dict, request_id: str, message: str,
+              fingerprint: str, operation: str = "agent") -> dict:
+        from skill_chat.tasks.service import TaskService
+
+        chat = self.repo.get_chat(scope)
+        request = {
+            "client_request_id": request_id, "message": message, "model_id": chat["model_id"],
+            "skill_id": None, "attachment_ids": [], "artifact_version_id": None,
+            "investigation": {"operation": operation, "base_revision": state["revision"], "snapshot": state},
+        }
+        turn, _ = self.repo.create_turn(scope, request, connection=connection)
+        task = TaskService(self.repo).enqueue(
+            scope, turn["id"], chat["model_id"], None, fingerprint, connection=connection,
+        )
+        return {"turn_id": turn["id"], "task_id": task["id"]}
+
+    def stage_candidate(self, scope: Scope, task_id: str, base_revision: int, payload: dict):
+        from skill_chat.storage.models import tasks
+
+        with self.repo.db.transaction() as connection:
+            task = connection.execute(select(tasks).where(
+                self.repo.owned(tasks, scope), tasks.c.id == task_id,
+            )).mappings().first()
+            if not task or task["state"] != "running":
+                raise Conflict("Task is no longer accepting investigation output")
+            state = self.row(connection, scope)["state"]
+            if state["revision"] != base_revision:
+                raise Conflict("Investigation changed since the task started; submit a new request")
+            candidate = connection.execute(select(investigation_candidates).where(
+                self.repo.owned(investigation_candidates, scope),
+                investigation_candidates.c.task_id == task_id,
+            )).mappings().first()
+            if candidate:
+                merged = {**candidate["payload"], **payload}
+                if "output_updates" in payload:
+                    merged["output_updates"] = {
+                        **candidate["payload"].get("output_updates", {}), **payload["output_updates"],
+                    }
+                connection.execute(update(investigation_candidates).where(
+                    investigation_candidates.c.id == candidate["id"],
+                ).values(payload=merged))
+            else:
+                connection.execute(insert(investigation_candidates).values(
+                    id=uuid4().hex, owner_id=scope.owner_id, chat_id=scope.chat_id, created=time.time(),
+                    task_id=task_id, base_revision=base_revision, payload=payload,
+                ))
+
+    def publish_candidates(self, connection, scope: Scope, task: dict, terminal_state: str):
+        candidate = connection.execute(select(investigation_candidates).where(
+            self.repo.owned(investigation_candidates, scope),
+            investigation_candidates.c.task_id == task["id"],
+        )).mappings().first()
+        if not candidate or terminal_state != "succeeded":
+            return
+        state = copy.deepcopy(self.row(connection, scope)["state"])
+        if state["revision"] != candidate["base_revision"]:
+            raise Conflict("Investigation changed; outdated task output cannot be published")
+        payload = candidate["payload"]
+        for field in ("sources", "transactions", "evidence", "calculations", "prepared"):
+            if field in payload:
+                state[field] = payload[field]
+        for stage, output in payload.get("output_updates", {}).items():
+            state["outputs"][stage].update(output)
+            state["outputs"][stage]["version"] += 1
+            self.invalidate(state, list(STAGES[STAGES.index(stage):]))
+        state["current_stage"] = "analyze" if payload.get("prepared") else state["current_stage"]
+        self.save(connection, scope, state, {
+            "actor": "demo_connector" if payload.get("prepared") else "agent",
+            "action": "publish_task_output", "task_id": task["id"],
+            "output_updates": payload.get("output_updates", {}),
+        })
+
+    def apply(
+        self, scope: Scope, command: InvestigationCommand, *, registry_fingerprint: str | None = None,
+    ) -> dict:
         self.repo.get_chat(scope)
         with self.repo.db.transaction() as connection:
             existing = connection.execute(select(investigation_commands).where(
@@ -152,6 +232,7 @@ class InvestigationService:
                 "amend_output": AmendOutput, "amend_fact": AmendFact,
                 "acknowledge_stage": SelectStage, "select_stage": SelectStage,
                 "review_note": ReviewNote, "prepare_note": Empty,
+                "prepare": Empty,
             }
             if command.action not in models:
                 raise InvalidInput("Unsupported investigation action")
@@ -161,7 +242,12 @@ class InvestigationService:
                 raise InvalidInput("Invalid investigation amendment or action fields") from error
             record = {"actor": "analyst", "action": command.action,
                       "request_id": command.client_request_id, "reason": payload.get("reason", "")}
-            if command.action == "amend_output":
+            if command.action == "prepare":
+                if not registry_fingerprint:
+                    raise InvalidInput("Preparation requires the server's extension registry")
+                state["current_stage"] = "gather_evidence"
+                self.invalidate(state, list(STAGES[2:]))
+            elif command.action == "amend_output":
                 stage = payload["stage_id"]
                 output = state["outputs"][stage]
                 record.update(stage_id=stage, before=output["text"], after=payload["text"])
@@ -191,6 +277,11 @@ class InvestigationService:
                 state["review"]["prepared_note"] = self.note({**state, "revision": state["revision"] + 1})
             sequence = self.save(connection, scope, state, record)
             receipt = {"chat_id": scope.chat_id, "revision": state["revision"], "sequence": sequence}
+            if command.action == "prepare":
+                receipt.update(self.queue(
+                    connection, scope, state, command.client_request_id, "Prepare investigation using demo connector",
+                    registry_fingerprint or "", "prepare",
+                ))
             connection.execute(insert(investigation_commands).values(
                 id=uuid4().hex, owner_id=scope.owner_id, chat_id=scope.chat_id, created=time.time(),
                 client_request_id=command.client_request_id, request=body, receipt=receipt,
