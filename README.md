@@ -47,6 +47,12 @@ This retains `DefaultAzureCredential` and its refreshable token handling; it sel
 
 Use the deployment's Claude base endpoint, `https://YOUR-RESOURCE.services.ai.azure.com/anthropic`, not the Azure OpenAI `.openai.azure.com` hostname. Keep the scope `https://ai.azure.com/.default`. A Claude 401 with `PermissionDenied` can indicate missing inference data actions even when the token is valid; changing the deployment name or refreshing that same token will not resolve missing permissions.
 
+## Centered chat layout prototype
+
+The throwaway prototype on branch `prototype/centered-investigation-layout` compares a tabbed stage inspector (**A**), vertical workflow outline (**B**) and split output/evidence dock (**C**). Run `npm --prefix .\web run prototype`, then open `http://127.0.0.1:5190/?prototype=centered-chat&variant=A`. Use the floating arrows or change `variant` to `B` or `C`. Drag the rail dividers (or focus them and use arrow keys) to resize both sidebars; C also has a resizable output/evidence split.
+
+All amendments and simulated replies stay in memory. An available API supplies read-only session snapshots; otherwise the preview uses packaged fictional CASE-1041 data. No inference or backend mutation is performed. The state viewer exposes the current local state. The prototype is development-only; the ordinary app and production build retain the existing layout.
+
 ## Run
 
 Use three PowerShell terminals at the project root:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { FileText, PanelLeft, PanelRight, X } from 'lucide-react'
 import { api } from './api/client'
 import { subscribeTurn } from './api/events'
@@ -15,6 +15,10 @@ import { investigations, InvestigationError } from './investigations/client'
 import { subscribeInvestigation, validateInvestigation } from './investigations/events'
 import type { Investigation, InvestigationAction } from './investigations/types'
 import './styles.css'
+
+const CenteredChatPrototype = import.meta.env.DEV
+  ? lazy(() => import('./investigations/CenteredChat.prototype'))
+  : null
 
 export default function App() {
   const [models, setModels] = useState<ModelChoice[]>([])
@@ -241,6 +245,12 @@ export default function App() {
       onRemove={id => setFiles(files.filter(file => file.id !== id))} onFiles={attach} onSend={send}
       disabled={Boolean(active) || sending || mutating || !models.length} onError={setError} />
   </>
+  if (CenteredChatPrototype && new URLSearchParams(location.search).get('prototype') === 'centered-chat') {
+    return <Suspense fallback={<p role="status">Loading layout prototype...</p>}>
+      <CenteredChatPrototype key={investigation?.chat_id ?? 'demo'} snapshot={investigation} chat={chat}
+        history={history} models={models} skills={skills} onOpen={id => { void openChat(id) }} />
+    </Suspense>
+  }
   return <div className={`app-shell ${sidebar ? 'with-sidebar' : ''}`}>
     <ChatSidebar chats={history} current={chat?.id ?? null} open={sidebar} onNew={newChat} onOpen={id => { void openChat(id) }}
       onNewInvestigation={() => { void newInvestigation() }} creating={creating || !models.length}

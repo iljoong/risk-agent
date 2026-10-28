@@ -1,0 +1,204 @@
+.cp-shell {
+  --p-bg: #f7f4ef; --p-elevated: #fcfbf8; --p-surface: #fff; --p-soft: #f5f5f5; --p-border: #dedede;
+  --p-text: #242424; --p-muted: #666; --p-accent: #b11f4b; --p-tint: #b11f4b0d; --p-on-accent: #fff;
+  --p-warning: #855b12; --p-warning-bg: #fff6e5; --p-shadow: 0 16px 48px #00000020;
+  color-scheme: light; color: var(--p-text); background: var(--p-bg); height: 100dvh;
+  display: flex; flex-direction: column; font: 14px/1.6 "Segoe UI", Aptos, sans-serif; overflow: hidden;
+}
+.cp-shell[data-mode=dark] {
+  --p-bg: #3d3b3a; --p-elevated: #343231; --p-surface: #292929; --p-soft: #313131; --p-border: #515151;
+  --p-text: #dedede; --p-muted: #b0b0b0; --p-accent: #fd8ea1; --p-tint: #fd8ea114; --p-on-accent: #1a1a1a;
+  --p-warning: #f1cb80; --p-warning-bg: #40382b; --p-shadow: 0 16px 48px #00000050; color-scheme: dark;
+}
+.cp-shell * { box-sizing: border-box }
+.cp-shell h1, .cp-shell h2, .cp-shell h3, .cp-shell h4 { line-height: 1.35; margin: 0; font-weight: 600 }
+.cp-shell p { margin: 0 0 12px; overflow-wrap: anywhere }
+.cp-shell button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: inherit; background: none; border: 1px solid var(--p-border); border-radius: 8px; padding: 7px 10px; font: inherit; cursor: pointer; line-height: 1.5 }
+.cp-shell button:hover:not(:disabled) { background: var(--p-tint); border-color: var(--p-accent) }
+.cp-shell button:disabled { opacity: .45; cursor: not-allowed }
+.cp-shell input, .cp-shell textarea, .cp-shell select { background: var(--p-surface); color: var(--p-text); border: 1px solid var(--p-border); border-radius: 7px; font: inherit; padding: 9px; min-width: 0; accent-color: var(--p-accent) }
+.cp-shell input::placeholder, .cp-shell textarea::placeholder { color: var(--p-muted) }
+.cp-shell textarea { resize: vertical; line-height: 1.75 }
+.cp-shell button:focus-visible, .cp-shell input:focus-visible, .cp-shell textarea:focus-visible, .cp-shell select:focus-visible,
+.cp-shell summary:focus-visible, .cp-resize:focus-visible { outline: 2px solid var(--p-accent); outline-offset: 3px }
+.cp-shell svg { flex-shrink: 0 }
+.cp-shell .cp-primary { background: var(--p-accent); border-color: var(--p-accent); color: var(--p-on-accent); font-weight: 600 }
+.cp-shell .cp-primary:hover:not(:disabled) { filter: brightness(.94); background: var(--p-accent) }
+.cp-topbar { height: 64px; flex: 0 0 64px; background: var(--p-surface); border-bottom: 1px solid var(--p-border); display: flex; align-items: center; gap: 14px; padding: 0 20px }
+.cp-brand { display: flex; align-items: center; gap: 10px; min-width: 174px; font-size: 17px; letter-spacing: -.5px }
+.cp-brand > span { display: grid; place-items: center; width: 34px; height: 37px; border-radius: 9px; background: var(--p-accent); color: var(--p-on-accent) }
+.cp-topbar-caption { font-size: 12px; color: var(--p-muted) }
+.cp-topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0 }
+.cp-prototype-badge { background: var(--p-tint); color: var(--p-accent); border: 1px dashed var(--p-accent); padding: 3px 8px; border-radius: 5px; font-size: 10px; white-space: nowrap }
+.cp-topbar-actions select { border: 0; padding: 6px; max-width: 240px; font-size: 12px }
+.cp-shell .cp-icon { width: 32px; height: 32px; padding: 0; border-color: transparent; color: var(--p-muted) }
+.cp-body { min-height: 0; flex: 1; display: flex; position: relative; overflow: hidden; padding-bottom: 0 }
+.cp-history { display: none; width: var(--proto-left); flex: 0 0 var(--proto-left); min-width: 0; background: var(--p-elevated); flex-direction: column; overflow: hidden }
+.cp-history.cp-open { display: flex }
+.cp-history > header { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 20px 14px 12px; font-size: 12px; font-weight: 600 }
+.cp-history > header button { border: 0; padding: 4px }
+.cp-shell .cp-new { margin: 0 12px 15px; font-size: 12px; justify-content: flex-start }
+.cp-search { display: flex; align-items: center; gap: 5px; margin: 0 12px 18px; color: var(--p-muted); border: 1px solid var(--p-border); border-radius: 7px; background: var(--p-surface); padding-left: 8px }
+.cp-search input { width: 100%; border: 0; font-size: 11px; background: none }
+.cp-history nav { overflow: auto; flex: 1; padding: 0 8px }
+.cp-shell .cp-session { width: 100%; border: 1px solid transparent; justify-content: flex-start; text-align: left; padding: 12px 8px; margin-bottom: 5px }
+.cp-session > span { min-width: 0 }
+.cp-session strong { font-size: 12px; display: block; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.cp-session small { display: block; color: var(--p-muted); font-size: 10px; margin-top: 3px }
+.cp-shell .cp-session.cp-active { border-color: var(--p-accent); background: var(--p-tint) }
+.cp-session.cp-active > svg { color: var(--p-accent) }
+.cp-history footer { margin-top: auto; padding: 14px; border-top: 1px solid var(--p-border); color: var(--p-muted); font-size: 11px }
+.cp-history footer p { font-size: 10px; margin: 4px 0 0 }
+.cp-status-dot { width: 6px; height: 6px; display: inline-block; border-radius: 50%; background: var(--p-accent); margin-right: 5px }
+.cp-resize { flex: 0 0 10px; width: 10px; align-self: stretch; position: relative; display: flex; align-items: center; justify-content: center; cursor: col-resize; touch-action: none; user-select: none; color: var(--p-muted); z-index: 4; background: var(--p-elevated); border-inline: 1px solid var(--p-border) }
+.cp-resize > svg { width: 10px; opacity: .6 }
+.cp-resize:hover, .cp-resize:focus-visible { background: var(--p-tint); color: var(--p-accent) }
+.cp-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--p-bg) }
+.cp-case-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 30px 18px; flex-shrink: 0 }
+.cp-case-heading small { font-size: 11px; color: var(--p-muted) }
+.cp-case-heading h1 { margin-top: 5px; font-size: clamp(19px, 1.8vw, 25px); letter-spacing: -.6px }
+.cp-priority { color: var(--p-warning); border: 1px solid var(--p-border); border-radius: 6px; padding: 4px 7px; font-size: 10px; white-space: nowrap; background: var(--p-warning-bg) }
+.cp-stages { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); padding: 0 24px 17px; gap: 4px; flex-shrink: 0 }
+.cp-shell .cp-stages button { min-width: 0; flex-direction: column; border: 0; gap: 6px; padding: 9px 3px; border-radius: 7px; color: var(--p-muted); font-size: 10px; text-align: center }
+.cp-stage-number { width: 23px; height: 23px; border: 1px solid var(--p-border); border-radius: 50%; display: grid; place-items: center; font-size: 10px; background: var(--p-surface) }
+.cp-shell .cp-stages button[aria-current=step] .cp-stage-number { border-color: var(--p-accent); color: var(--p-on-accent); background: var(--p-accent) }
+.cp-shell .cp-stages button[aria-pressed=true] { color: var(--p-text); background: var(--p-tint) }
+.cp-thread { overflow: auto; min-height: 0; flex: 1; scrollbar-gutter: stable }
+.cp-thread-inner { max-width: 800px; width: 100%; margin: auto; padding: 15px 34px 25px }
+.cp-conversation-context { font-size: 10px; display: flex; gap: 7px; color: var(--p-muted); align-items: center; margin-bottom: 28px !important }
+.cp-message { margin-bottom: 28px; font-size: 13px }
+.cp-message-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--p-accent); font-size: 12px }
+.cp-message-label strong { color: var(--p-text); font-weight: 600 }
+.cp-you { display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1px solid var(--p-border); border-radius: 50%; color: var(--p-muted); font-size: 10px }
+.cp-message > p { line-height: 1.9; white-space: pre-wrap; max-width: 78ch; margin: 0 }
+.cp-user { padding: 14px 18px; margin-left: 35px; border: 1px solid var(--p-border); border-radius: 12px; background: var(--p-surface) }
+.cp-assistant { padding: 0 2px }
+.cp-citations { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 15px }
+.cp-shell .cp-citations button { font-size: 10px; color: var(--p-accent); background: var(--p-surface); padding: 4px 7px }
+.cp-compose-area { width: min(800px,100%); align-self: center; padding: 12px 30px 14px; flex-shrink: 0 }
+.cp-directions { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px }
+.cp-shell .cp-directions button { font-size: 10px; background: var(--p-elevated); color: var(--p-muted); padding: 5px 8px }
+.cp-composer { border: 1px solid var(--p-border); background: var(--p-surface); border-radius: 12px; padding: 12px }
+.cp-composer:focus-within { outline: 1px solid var(--p-accent) }
+.cp-composer textarea { display: block; width: 100%; border: 0; border-radius: 0; padding: 0; background: none; font-size: 12px; resize: none; outline: none !important }
+.cp-composer > div { display: flex; align-items: center; margin-top: 10px; gap: 8px }
+.cp-composer select { max-width: 65%; padding: 3px 0; border: 0; font-size: 11px; color: var(--p-muted) }
+.cp-composer > div > span { margin-left: auto; font-size: 9px; color: var(--p-muted) }
+.cp-shell .cp-composer button { padding: 6px; border-radius: 8px }
+.cp-disclaimer { margin: 8px 0 0 !important; color: var(--p-muted); font-size: 9px; text-align: center }
+.cp-inspector { display: none; width: var(--proto-right); flex: 0 0 var(--proto-right); min-width: 0; flex-direction: column; overflow: hidden; background: var(--p-surface) }
+.cp-inspector.cp-open { display: flex }
+.cp-rail-heading { padding: 20px 20px 15px; border-bottom: 1px solid var(--p-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-shrink: 0 }
+.cp-rail-heading small { color: var(--p-muted); font-size: 10px }
+.cp-rail-heading h2 { font-size: 19px; margin-top: 4px; letter-spacing: -.4px }
+.cp-rail-heading button { border: 0; padding: 4px; color: var(--p-muted) }
+.cp-tabs { display: flex; padding: 0 15px; border-bottom: 1px solid var(--p-border); flex-shrink: 0 }
+.cp-shell .cp-tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; flex: 1; padding: 12px 5px; font-size: 12px; color: var(--p-muted) }
+.cp-shell .cp-tabs button[aria-selected=true] { color: var(--p-accent); border-bottom-color: var(--p-accent) }
+.cp-rail-scroll { flex: 1; min-height: 0; overflow: auto; padding: 20px; scrollbar-gutter: stable }
+.cp-output, .cp-evidence, .cp-review { font-size: 12px; min-width: 0 }
+.cp-output h3, .cp-evidence h3, .cp-review h3 { font-size: 14px; margin-bottom: 12px }
+.cp-section-title { display: flex; justify-content: space-between; gap: 10px; align-items: center }
+.cp-section-title h3 { margin-bottom: 0 }
+.cp-section-title > span { font-size: 10px; color: var(--p-muted) }
+.cp-muted { color: var(--p-muted); font-size: 11px; line-height: 1.75; margin-top: 7px !important }
+.cp-output label { display: grid; gap: 7px; font-size: 11px; margin-top: 17px }
+.cp-output textarea, .cp-output input { width: 100%; font-size: 12px }
+.cp-output > button { margin-top: 16px; font-size: 11px }
+.cp-shell details { border-top: 1px solid var(--p-border); margin-top: 18px; padding-top: 13px }
+.cp-shell summary { cursor: pointer; color: var(--p-muted); font-size: 11px; padding: 4px 0 }
+.cp-shell details > p { margin-top: 10px; line-height: 1.8 }
+.cp-rail-footer { border-top: 1px solid var(--p-border); padding: 10px 20px; color: var(--p-muted); font-size: 10px; background: var(--p-elevated) }
+.cp-evidence-item { padding: 14px 0; border-bottom: 1px solid var(--p-border) }
+.cp-evidence-item small { font-size: 9px; color: var(--p-muted) }
+.cp-evidence-item h4 { font-size: 12px; margin: 5px 0 }
+.cp-evidence-item p { line-height: 1.8 }
+.cp-evidence-item > div { display: flex; flex-wrap: wrap; gap: 5px }
+.cp-evidence-item button { color: var(--p-accent); font-size: 10px; padding: 4px 6px }
+.cp-source { border: 1px solid var(--p-accent); border-radius: 8px; background: var(--p-elevated); padding: 13px; margin-top: 16px }
+.cp-source h4 { margin: 8px 0 }
+.cp-source small { color: var(--p-muted) }
+.cp-transactions { list-style: none; padding: 0 }
+.cp-transactions li { display: flex; align-items: start; gap: 10px; border-bottom: 1px solid var(--p-border); padding: 10px 0; font-size: 10px }
+.cp-transactions time { color: var(--p-muted) }
+.cp-transactions small { display: block; color: var(--p-muted) }
+.cp-transactions strong { margin-left: auto; white-space: nowrap }
+.cp-warning { border-left: 2px solid var(--p-warning); background: var(--p-warning-bg); color: var(--p-warning); padding: 12px; margin: 16px 0; font-size: 11px; line-height: 1.8 }
+.cp-review ul { padding-left: 18px; line-height: 1.9 }
+.cp-review li { margin-bottom: 8px }
+.cp-variant-b .cp-main { background: var(--p-surface) }
+.cp-variant-b .cp-case-heading { padding-bottom: 13px }
+.cp-brief-line { display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--p-border); padding: 0 30px 17px; color: var(--p-muted); font-size: 10px; flex-shrink: 0 }
+.cp-brief-line > span { margin-left: auto; color: var(--p-accent) }
+.cp-variant-b .cp-user { border: 0; border-left: 2px solid var(--p-border); border-radius: 0; margin-left: 0; background: var(--p-elevated) }
+.cp-variant-b .cp-compose-area { border-top: 1px solid var(--p-border); padding-top: 18px }
+.cp-outline-title { font-size: 11px; color: var(--p-muted); margin-bottom: 14px !important }
+.cp-stages.cp-stages-vertical { display: flex; flex-direction: column; gap: 2px; padding: 0 }
+.cp-shell .cp-stages-vertical button { flex-direction: row; text-align: left; justify-content: flex-start; gap: 12px; padding: 9px; font-size: 12px }
+.cp-stages-vertical small { display: block; font-size: 9px; margin-top: 3px; color: var(--p-muted) }
+.cp-stages-vertical button > svg { margin-left: auto }
+.cp-outline-output { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--p-border) }
+.cp-variant-b .cp-inspector { background: var(--p-elevated) }
+.cp-case-ribbon { display: flex; gap: 10px; align-items: center; padding: 12px 30px; border-block: 1px solid var(--p-border); font-size: 11px; background: var(--p-elevated); flex-shrink: 0 }
+.cp-case-ribbon > span { color: var(--p-accent); font-weight: 600 }
+.cp-shell .cp-case-ribbon button { border: 0; margin-left: auto; font-size: 10px; padding: 0 }
+.cp-stage-select { display: flex; align-items: center; gap: 10px; padding: 11px 20px; border-bottom: 1px solid var(--p-border); font-size: 10px; color: var(--p-muted); flex-shrink: 0 }
+.cp-stage-select select { flex: 1; font-size: 12px; padding: 6px }
+.cp-dock-top { padding: 18px 20px; overflow: auto; min-height: 0 }
+.cp-resize.cp-resize-horizontal { flex: 0 0 10px; height: 10px; width: 100%; cursor: row-resize; border-inline: 0; border-block: 1px solid var(--p-border) }
+.cp-resize-horizontal > svg { width: 16px; height: 10px }
+.cp-dock-bottom { flex: 1; min-height: 0; overflow: auto; padding: 14px 20px; background: var(--p-elevated) }
+.cp-dock-caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 18px; font-size: 11px }
+.cp-dock-caption button { font-size: 10px; padding: 4px 7px }
+.cp-chat-footnote { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 10px; color: var(--p-muted); padding: 0 15px 12px }
+.cp-notice { min-height: 28px; flex: 0 0 28px; background: var(--p-elevated); border-top: 1px solid var(--p-border); display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--p-muted); padding: 0 14px; overflow: hidden }
+.cp-notice > span { white-space: nowrap; text-overflow: ellipsis; overflow: hidden }
+.cp-shell { padding-bottom: 68px }
+.cp-switcher { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 12px; color: #fff; background: #242424; border: 1px solid #777; border-radius: 12px; box-shadow: var(--p-shadow); padding: 8px 10px; min-width: 320px }
+.cp-shell .cp-switcher button { background: none; color: #fff; border: 0; padding: 5px }
+.cp-switcher > span { flex: 1; min-width: 170px }
+.cp-switcher small { color: #bbb; display: block; font-size: 9px }
+.cp-switcher strong { display: block; font-size: 12px; font-weight: 550 }
+.cp-shell .cp-state { position: static; border: 0; margin: 0; padding: 0 }
+.cp-state summary { color: #ddd; list-style: none; padding: 5px 7px; border-left: 1px solid #666; font-size: 10px }
+.cp-state pre { position: absolute; bottom: calc(100% + 10px); left: 0; right: 0; max-height: 45vh; overflow: auto; background: #242424; border: 1px solid #777; border-radius: 10px; color: #eee; padding: 14px; margin: 0; font-size: 10px; white-space: pre-wrap; overflow-wrap: anywhere }
+.cp-visually-hidden { position: absolute; clip: rect(0,0,0,0); width: 1px; height: 1px; overflow: hidden; white-space: nowrap }
+@media (max-width: 1250px) {
+  .cp-topbar-caption { display: none }
+  .cp-case-heading { padding-inline: 22px; align-items: flex-start; flex-direction: column; gap: 8px }
+  .cp-case-heading h1 { font-size: 22px }
+  .cp-thread-inner { padding-inline: 24px }
+  .cp-stages { padding-inline: 14px }
+  .cp-compose-area { padding-inline: 20px }
+}
+@media (max-width: 1000px) {
+  .cp-brand { min-width: 0 }
+  .cp-history, .cp-inspector { position: absolute; inset: 0 auto 0 0; z-index: 25; box-shadow: var(--p-shadow); max-width: calc(100vw - 32px) }
+  .cp-inspector { inset: 0 0 0 auto }
+  .cp-history + .cp-resize { position: absolute; left: min(var(--proto-left),calc(100vw - 32px)); top: 0; bottom: 0; z-index: 26 }
+  .cp-main + .cp-resize { position: absolute; right: min(var(--proto-right),calc(100vw - 32px)); top: 0; bottom: 0; z-index: 26 }
+  .cp-case-heading { flex-direction: row; align-items: center }
+}
+@media (max-width: 600px) {
+  .cp-topbar { padding: 0 10px; gap: 7px; height: 60px; flex-basis: 60px }
+  .cp-brand { gap: 6px; font-size: 14px }
+  .cp-brand > span { width: 28px; height: 31px }
+  .cp-topbar-actions { gap: 3px }
+  .cp-topbar-actions select, .cp-prototype-badge { display: none }
+  .cp-case-heading { flex-direction: column; align-items: flex-start; padding: 18px 18px 14px }
+  .cp-case-heading h1 { font-size: 23px }
+  .cp-thread-inner { padding: 16px 18px }
+  .cp-conversation-context { font-size: 9px }
+  .cp-message { font-size: 12px; margin-bottom: 22px }
+  .cp-user { margin-left: 15px }
+  .cp-stages { gap: 2px; padding: 0 10px 10px }
+  .cp-shell .cp-stages button { font-size: 9px }
+  .cp-compose-area { padding: 10px 14px }
+  .cp-directions { display: none }
+  .cp-brief-line, .cp-case-ribbon { padding-inline: 18px; font-size: 9px }
+  .cp-brief-line > span { display: none }
+  .cp-chat-footnote { display: none }
+  .cp-switcher { bottom: 9px; min-width: 0; width: calc(100vw - 28px); max-width: 380px; gap: 8px }
+  .cp-shell { padding-bottom: 66px }
+  .cp-history header, .cp-rail-heading { padding-top: 15px }
+}
