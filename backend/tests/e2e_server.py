@@ -99,7 +99,7 @@ def settings():
     return load_settings(
         {
             "APP_MODELS": json.dumps(models()),
-            "APP_DATA_DIR": sys.argv[2] if len(sys.argv) > 2 else str(ROOT / ".data" / "e2e"),
+            "APP_DATA_DIR": sys.argv[2] if len(sys.argv) > 2 else str(ROOT / ".data" / "e2e" / "investigation-evidence-desk"),
             "APP_PROJECT_DIR": str(ROOT),
             "APP_FRONTEND_ORIGIN": "http://127.0.0.1:18962",
         }

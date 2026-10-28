@@ -12,7 +12,8 @@
 
 **Execution status:** Tasks 1-7 implemented in native execution on the approved
 feature branch. Final offline verification: 121 backend tests passed (11
-live/runtime tests deselected), mypy/ruff passed, 22 frontend unit tests passed,
+live/runtime tests deselected), mypy/ruff passed, 20 frontend unit tests passed
+on the committed feature tree (22 with the separate uncommitted workspace changes),
 frontend lint/build passed, and all 8 Playwright tests passed. The single fresh
 whole-branch review is complete: retained stage drafts, bounded projections with
 paged full revision history, and evidence-backed review/export gates address all

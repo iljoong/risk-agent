@@ -188,7 +188,7 @@ npm --prefix .\web run build
 npm --prefix .\web run test:e2e
 ```
 
-Playwright uses separate test-only API and worker processes on ports 18961/18962 with deterministic provider responses, a generated PDF, and a separate `.data\e2e` database. It does **not** demonstrate live model quality or cloud permissions. If Chromium is missing, run `npm --prefix .\web exec playwright install chromium`.
+Playwright uses separate test-only API and worker processes on ports 18961/18962 with deterministic provider responses, a generated PDF, and a separate `.data\e2e\investigation-evidence-desk` database. This avoids reusing incompatible prototype fixture schemas and leaves their databases untouched. It does **not** demonstrate live model quality or cloud permissions. If Chromium is missing, run `npm --prefix .\web exec playwright install chromium`.
 
 To exercise actual Agent Framework and Copilot CLI processes against a local model HTTP fixture (no Azure credentials or cloud calls):
 
