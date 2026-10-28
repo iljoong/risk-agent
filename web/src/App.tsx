@@ -87,6 +87,14 @@ export default function App() {
           if (current.current !== id) return
           if (event.type === 'STATE_SNAPSHOT') setInvestigation(previous =>
             !previous || previous.chat_id !== id || previous.revision <= event.snapshot.revision ? event.snapshot : previous)
+          else if (event.type === 'ACTIVITY_SNAPSHOT' && event.activityType === 'a2ui-surface') {
+            setInvestigation(previous => {
+              const clarification = previous?.clarification
+              if (!previous || clarification?.id !== event.messageId ||
+                clarification.surface_revision !== event.content.revision || clarification.status !== event.content.status) return previous
+              return { ...previous, clarification: { ...clarification, operations: event.content.a2ui_operations } }
+            })
+          }
         }
       } catch (cause) { if (!controller.signal.aborted) report(cause) }
     })()

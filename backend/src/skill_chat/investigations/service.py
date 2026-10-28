@@ -2,7 +2,7 @@ import copy
 import time
 from uuid import uuid4
 
-from ag_ui.core import EventType, StateSnapshotEvent
+from ag_ui.core import ActivitySnapshotEvent, EventType, StateSnapshotEvent
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import insert, select, update
 
@@ -11,13 +11,16 @@ from skill_chat.investigations.schemas import (
     STAGES,
     AmendFact,
     AmendOutput,
+    ClarificationIdentity,
     Empty,
     InvestigationCommand,
     InvestigationSnapshot,
+    ResolveClarification,
     ReviewNote,
     SelectStage,
     StageOutput,
 )
+from skill_chat.investigations.surfaces import SCOPE_QUESTION, build_scope_surface, validate_scope_surface
 from skill_chat.storage.models import (
     chats,
     investigation_candidates,
@@ -95,7 +98,20 @@ class InvestigationService:
                 mode="json", by_alias=True, exclude_none=True,
             ),
         ))
-        return int(result.inserted_primary_key[0])
+        sequence = int(result.inserted_primary_key[0])
+        clarification = state.get("clarification")
+        if clarification:
+            activity = ActivitySnapshotEvent(
+                type=EventType.ACTIVITY_SNAPSHOT, message_id=clarification["id"], activity_type="a2ui-surface",
+                content={"revision": clarification["surface_revision"], "status": clarification["status"],
+                         "a2ui_operations": clarification["operations"] if clarification["status"] == "pending" else []},
+            )
+            result = connection.execute(insert(investigation_ui_events).values(
+                owner_id=scope.owner_id, chat_id=scope.chat_id, created=time.time(),
+                payload=activity.model_dump(mode="json", by_alias=True, exclude_none=True),
+            ))
+            sequence = int(result.inserted_primary_key[0])
+        return sequence
 
     def save(self, connection, scope: Scope, state: dict, record: dict) -> int:
         state["revision"] += 1
@@ -265,7 +281,8 @@ class InvestigationService:
                 "amend_output": AmendOutput, "amend_fact": AmendFact,
                 "acknowledge_stage": SelectStage, "select_stage": SelectStage,
                 "review_note": ReviewNote, "prepare_note": Empty,
-                "prepare": Empty,
+                "prepare": Empty, "request_clarification": Empty,
+                "resolve_clarification": ResolveClarification, "cancel_clarification": ClarificationIdentity,
             }
             if command.action not in models:
                 raise InvalidInput("Unsupported investigation action")
@@ -308,12 +325,47 @@ class InvestigationService:
                     raise Conflict("Review the current note before preparing it")
                 state["current_stage"] = "decision"
                 state["review"]["prepared_note"] = self.note({**state, "revision": state["revision"] + 1})
+            elif command.action == "request_clarification":
+                if state["clarification"] and state["clarification"]["status"] == "pending":
+                    raise Conflict("An investigation scope clarification is already pending")
+                identity = uuid4().hex
+                revision = state["revision"] + 1
+                operations = build_scope_surface(identity, revision, SCOPE_QUESTION)
+                validate_scope_surface(operations)
+                state["clarification"] = {
+                    "id": identity, "surface_revision": revision, "status": "pending",
+                    "question": SCOPE_QUESTION, "operations": operations, "answer": None,
+                }
+            elif command.action in ("resolve_clarification", "cancel_clarification"):
+                clarification = state["clarification"]
+                if (not clarification or clarification["id"] != payload["clarification_id"]
+                        or clarification["surface_revision"] != payload["surface_revision"]
+                        or clarification["status"] != "pending"):
+                    raise Conflict("Clarification is stale, cancelled, resolved or outside this session")
+                if command.action == "resolve_clarification":
+                    if not registry_fingerprint:
+                        raise InvalidInput("Clarification response requires the server's extension registry")
+                    answer = payload["answer"]
+                    if len(answer.encode()) > 16384:
+                        raise InvalidInput("Scope answer exceeds 16 KiB")
+                    model = self.repo.settings.model(self.repo.get_chat(scope)["model_id"])
+                    if not model or len(f"Investigation scope clarification:\n{answer}".encode()) > (model.context_budget_tokens - 2500) // 2:
+                        raise InvalidInput("Scope answer exceeds the selected model's context budget")
+                    clarification.update(status="resolved", answer=answer)
+                    self.invalidate(state, list(STAGES))
+                else:
+                    clarification["status"] = "cancelled"
             sequence = self.save(connection, scope, state, record)
             receipt = {"chat_id": scope.chat_id, "revision": state["revision"], "sequence": sequence}
             if command.action == "prepare":
                 receipt.update(self.queue(
                     connection, scope, state, command.client_request_id, "Prepare investigation using demo connector",
                     registry_fingerprint or "", "prepare",
+                ))
+            elif command.action == "resolve_clarification":
+                receipt.update(self.queue(
+                    connection, scope, state, command.client_request_id,
+                    f"Investigation scope clarification:\n{payload['answer']}", registry_fingerprint or "",
                 ))
             connection.execute(insert(investigation_commands).values(
                 id=uuid4().hex, owner_id=scope.owner_id, chat_id=scope.chat_id, created=time.time(),

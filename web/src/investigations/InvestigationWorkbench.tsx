@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { EvidencePanel } from './EvidencePanel'
 import { ReviewPanel } from './ReviewPanel'
 import { StageEditor } from './StageEditor'
+import { ClarificationSurface } from './ClarificationSurface'
 import { stages, stageNames } from './types'
 import type { Investigation, OnCommand, Stage } from './types'
 import './investigation.css'
@@ -24,11 +25,17 @@ export function InvestigationWorkbench({ snapshot, busy, onCommand, conversation
         <span>{index + 1} {stageNames[stage]}</span><small>{snapshot.outputs[stage].needs_review ? 'Re-review required' : 'Acknowledged'}</small>
       </button>)}</nav>
     <EvidencePanel snapshot={snapshot} />
+    <button disabled={busy || snapshot.clarification?.status === 'pending'} onClick={() => { void onCommand('request_clarification', {}, snapshot.revision).catch(() => {}) }}>Clarify investigation scope</button>
+    {snapshot.clarification && <ClarificationSurface key={`${snapshot.clarification.id}-${snapshot.clarification.surface_revision}`}
+      activity={snapshot.clarification} busy={busy}
+      onResolve={payload => onCommand('resolve_clarification', payload, snapshot.revision)}
+      onCancel={payload => onCommand('cancel_clarification', payload, snapshot.revision)} />}
     {review && <ReviewPanel snapshot={snapshot} busy={busy} onCommand={onCommand} />}
     <div className="investigation-working"><StageEditor snapshot={snapshot} stage={selected} busy={busy} onCommand={onCommand} />
       <section className="investigation-conversation" aria-label="Investigation conversation"><h2>Challenge the interpretation</h2>
         <p>Direct the agent; proposals become stage output only after successful execution.</p>
         <button onClick={() => onDirection('Challenge the current interpretation. Separate supporting evidence, counterevidence and remaining gaps; propose a revised analysis with evidence references.')}>Draft a challenge</button>
+        <button onClick={() => onDirection('Check the supplied fictional policy requirements. Cite the applicable passages, distinguish policy from law, and propose any needed stage output corrections.')}>Draft a policy check</button>
         {conversation}
       </section></div>
   </div>

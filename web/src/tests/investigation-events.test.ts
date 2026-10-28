@@ -1,5 +1,9 @@
-import { expect, it } from 'vitest'
-import { InvestigationEventDecoder, validateInvestigation } from '../investigations/events'
+import { afterEach, expect, it, vi } from 'vitest'
+import { InvestigationEventDecoder, subscribeInvestigation, validateInvestigation } from '../investigations/events'
+import { investigations } from '../investigations/client'
+import { fixture } from './investigation-fixture'
+
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 it('reassembles AG-UI state frames and drops replayed delivery IDs', () => {
   const decoder = new InvestigationEventDecoder(10)
@@ -23,4 +27,17 @@ it('keeps independent replay cursors and handles a split CRLF', () => {
   expect(second.push(frame)).toEqual([])
   expect(second.push('\n')[0].id).toBe(2)
   expect(first.push(frame + '\n')).toEqual([])
+})
+
+it('rehydrates an invalid checkpoint without starting another execution', async () => {
+  const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 409 }))
+  vi.stubGlobal('fetch', fetcher)
+  vi.spyOn(investigations, 'get').mockResolvedValue({ snapshot: fixture(), sequence: 72 })
+  const controller = new AbortController()
+  const stream = subscribeInvestigation('case-chat', 999, controller.signal)
+  expect((await stream.next()).value).toMatchObject({ type: 'STATE_SNAPSHOT', snapshot: { revision: 1 } })
+  expect(fetcher.mock.calls[0][0]).toContain('/investigation/events?after=999')
+  expect(fetcher).toHaveBeenCalledTimes(1)
+  controller.abort()
+  await stream.return(undefined)
 })

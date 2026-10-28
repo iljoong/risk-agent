@@ -44,6 +44,15 @@ class Empty(StrictModel):
     pass
 
 
+class ClarificationIdentity(StrictModel):
+    clarification_id: str = Field(min_length=1, max_length=100)
+    surface_revision: int = Field(ge=1)
+
+
+class ResolveClarification(ClarificationIdentity):
+    answer: str = Field(min_length=1, max_length=16384)
+
+
 class StageOutput(StrictModel):
     text: str = Field(max_length=12000)
     version: int = Field(ge=1)
