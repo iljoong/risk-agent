@@ -111,7 +111,26 @@ description: Explain what the skill does and when to use it.
 Instructions using the available scoped tools.
 ```
 
-The name must match its folder and contain lowercase letters, numbers, hyphens, or underscores. Restart API and worker after adding/editing skills. Invalid definitions fail startup. Each sample includes three evaluation prompts in its `evals\evals.json`; live model quality requires evaluation with your configured deployments.
+The name must match its folder and contain lowercase letters, numbers, hyphens, or underscores. Restart API and worker after adding/editing skills. Invalid definitions fail startup. Each AML skill and customer-research include three evaluation prompts in their `evals\evals.json`; live model quality requires evaluation with your configured deployments.
+
+### Optional AML investigation skills
+
+Select one skill from **Skills**, or type its slash command in the composer. These are optional instructions for the configured agent, not a new detector, approved bank policy pack, calculation engine, live connector, or automatic six-skill workflow. Ordinary chat and the investigation desk do not require them.
+
+| Skill | Analyst output | Example request |
+|---|---|---|
+| `/aml-case-context` | Opening case brief and context gaps. | Explain the recorded alert trigger, customer context, and what needs checking. |
+| `/aml-transaction-behaviour` | Source-linked transaction assessment. | Assess the prepared transaction indicators against available expectations and history. |
+| `/aml-hypothesis-review` | Balanced hypotheses, counterevidence, and distinguishing checks. | Challenge the concern and compare plausible legitimate explanations. |
+| `/aml-policy-applicability` | Versioned case-specific requirements and human approval checklist. | Identify which supplied procedures apply and which checks remain incomplete. |
+| `/aml-investigation-readiness` | Evidence completeness, blockers, and next permitted checks. | Assess whether the evidence supports a recommendation; keep required gaps blocking readiness. |
+| `/aml-case-narrative` | Editable, cited draft for analyst review. | Draft a case note that preserves amendments, counterevidence, and unresolved gaps. |
+
+For the fictional CASE-1041, use **Prepare investigation** before requesting evidence-backed workbench updates. Skills read the saved scope and amendments; requested stage proposals are published only after successful execution and still require human review. They do not acknowledge outputs, alter the original alert priority, or execute a disposition. In ordinary conversations, provide the relevant case/policy material; a PDF is optional.
+
+Supply applicable bank-approved typology definitions and policy versions for real applicability assessments. The demo policies are explicitly fictional and do not supply a complete real approval path. Missing authority stays unknown. Transaction assessments use the server's verified preparation metrics or identified approved calculation outputs; missing or mismatched calculations are reported, not performed by language-model arithmetic. Missing required evidence cannot produce a ready result.
+
+After adding these skills, restart **both API and worker** to load the matching extension fingerprint. The 18 AML evaluation prompts cover normal assessments, missing inputs, unsupported claims, and instruction/approval boundaries. Structural validation is not a live-model evaluation or evidence of AML-domain accuracy.
 
 ### RFP risk-analysis sample
 

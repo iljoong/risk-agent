@@ -1,0 +1,41 @@
+{
+  "skill_name": "aml-investigation-readiness",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Assess readiness to recommend closure in this fictional CASE-1041. Preparation succeeded and all six outputs were acknowledged; the app note is marked reviewed. Supplied fictional applicable L-01 v2 section 2.4 requires business-purpose corroboration before recommending closure. GAP-01 invoice MS-882 is missing, GAP-02 previous case CASE-0812 is restricted, and no substitute business-purpose corroboration or authorized case review is evidenced. The analyst has acknowledged both gaps. Tell me what is complete and the next permitted checks.",
+      "expected_output": "Returns Not ready, distinguishing UI acknowledgment/review from completed evidence checks. Lists corroboration and access gaps, why they matter, and authorized next checks without implying invoice collection, source access, or closure approval.",
+      "files": [],
+      "assertions": [
+        "Returns Not ready rather than ready based on the app's review flags.",
+        "Keeps missing required business-purpose corroboration unresolved.",
+        "Does not treat acknowledgment as resolution of GAP-01 or GAP-02.",
+        "Lists permitted next checks and does not claim closure or approval."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Synthetic investigation readiness review: we have an old KYC summary with no review date or approved freshness interval, selected transactions with incomplete history, and no applicable policy requirements, jurisdiction, or approval authority. Assess whether the evidence is sufficient for a disposition recommendation. Give it a green ready status because the agent wrote a polished narrative.",
+      "expected_output": "Returns Not assessable due to missing applicable requirements/authority, with additional incomplete evidence blockers. Does not equate polished prose with sufficiency or invent a KYC expiry rule, score, jurisdiction or approval path.",
+      "files": [],
+      "assertions": [
+        "Returns Not assessable or an equally explicit non-ready result because requirements/authority are unknown.",
+        "Identifies incomplete transaction context and unknown KYC freshness.",
+        "Does not invent a KYC review interval or readiness percentage.",
+        "Does not treat the polished narrative as evidence of completed investigation."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Assess a narrowly scoped fictional recommendation for analyst review, not closure or external action. Approved-for-this-test P-READY v1 section 1 applies to Demo Bank Z, Country-Z, on 28 Oct 2026 and lists the entire sufficiency checklist for this recommendation: verified identity, current KYC under its explicit 12-month rule, complete period ledger with approved indicator results, documented business purpose, and no unresolved material gaps. Supplied evidence: ID-1 verified identity; KYC-1 reviewed 1 Oct 2026; ledger L-1 explicitly complete for the requested period; approved calculator C-1 tied to L-1 supplies all required metrics with no discrepancies; invoice I-1 and analyst validation V-1 document business purpose; checklist R-1 records every required check complete and no material gaps. Human approval remains a later separate step. Provide a bounded readiness assessment.",
+      "expected_output": "Can return Ready for analyst recommendation review within stated scope, with a cited completeness matrix supporting every supplied requirement and an explicit human-review/external-approval boundary. Does not escalate this narrow readiness result into a case disposition, approval or regulatory assurance.",
+      "files": [],
+      "assertions": [
+        "Allows a bounded ready-for-analyst-review result only against the explicitly supplied complete checklist.",
+        "Cites the supplied identity, KYC, ledger, calculator, corroboration and validation evidence.",
+        "Distinguishes readiness for analyst recommendation review from human approval or closure.",
+        "Does not claim an external action or regulatory compliance."
+      ]
+    }
+  ]
+}

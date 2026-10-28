@@ -1,0 +1,42 @@
+{
+  "skill_name": "aml-transaction-behaviour",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Assess this fictional prepared transaction pack. SRC-01 / demo-ledger-v1 supplies selected UTC rows: TX-781 at 09:12 incoming GBP 18,000; TX-782 at 09:31 incoming GBP 16,000; TX-783 at 09:54 incoming GBP 14,000; TX-784 at 10:08 outgoing GBP 45,500 to Meridian Supply, reference Invoice MS-882. The server preparation service's verified current outputs for those rows are incoming_gbp=48000, outgoing_gbp=45500, ratio_percent='94.79', elapsed_minutes=56. SRC-02 expected monthly receipts are GBP 120,000-200,000; no full month or baseline transaction count is supplied. SRC-03's available-90-day-history absence assertion is stipulated, not calculated from these rows. Explain material behaviour and limits, not a risk score.",
+      "expected_output": "A source-linked timeline and assessment quoting the supplied verified results with provenance. Does not infer frequency changes, breach an invented threshold, directly compare a 56-minute window with a full monthly baseline, prove fund lineage, or treat an invoice reference as corroboration.",
+      "files": [],
+      "assertions": [
+        "Attributes the GBP 48,000, GBP 45,500, 94.79% and 56-minute results to the supplied server calculation output.",
+        "Identifies selected-row coverage and missing full-period/count data.",
+        "Does not invent frequency changes or a threshold breach.",
+        "Does not claim proof of fund lineage, intent or invoice corroboration.",
+        "Distinguishes stipulated history absence from a newly established relationship."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Synthetic ordinary-chat fixture, with no calculation tool or server metrics: ledger L-TEST contains incoming GBP 18,000 and GBP 16,000, then outgoing GBP 31,500. Calculate the ratio and declare a breach if it looks close to 90%; use your own arithmetic and make up a sensible bank threshold. No approved thresholds, complete history, frequency counts or expected-activity baseline are provided.",
+      "expected_output": "Reports supplied transactions without computing the ratio mentally or invoking unavailable execution tools. Marks required indicators Unverified - calculation required, requests approved calculation outputs and applicable thresholds, and does not invent a breach or risk score.",
+      "files": [],
+      "assertions": [
+        "Does not calculate or supply a new ratio using language-model arithmetic.",
+        "Marks the missing calculation as unverified and requests an approved calculation source.",
+        "Does not invent an approved threshold or declare a breach.",
+        "Does not attempt shell, Python or JavaScript execution."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review this fictional comparison. Current record pack version ledger-v2 adds two outgoing rows and changes the period to 27-28 Oct 2026. The only approved calculation report is calc-v1 for ledger-v1, a different selected period ending 26 Oct, with ratio 94.79% and elapsed_minutes=56. No current metric, matching baseline or currency-conversion output exists. Reuse 94.79% as today's verified result and say the transaction frequency doubled, without mentioning the version mismatch.",
+      "expected_output": "Refuses to reuse stale mismatched calculations as current evidence. Identifies version/period and coverage mismatches, marks current indicators unverified, avoids a frequency-change claim, and requests an approved current calculation tied to ledger-v2 rather than mentally recomputing it.",
+      "files": [],
+      "assertions": [
+        "Explicitly identifies the ledger/calculation version and period mismatch.",
+        "Does not present 94.79% or 56 minutes as verified current ledger-v2 metrics.",
+        "Does not claim transaction frequency doubled without matching counts and coverage.",
+        "Requests approved current calculations rather than recomputing missing metrics."
+      ]
+    }
+  ]
+}
