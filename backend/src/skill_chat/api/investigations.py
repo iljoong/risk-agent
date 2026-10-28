@@ -1,0 +1,63 @@
+import asyncio
+import json
+
+from fastapi import APIRouter, Query, Request
+from fastapi.responses import StreamingResponse
+
+from skill_chat.api.dependencies import scope, service
+from skill_chat.api.schemas import CreateInvestigation
+from skill_chat.contracts import InvalidInput
+from skill_chat.investigations.projection import InvestigationProjection
+from skill_chat.investigations.schemas import InvestigationCommand
+from skill_chat.investigations.service import InvestigationService
+
+router = APIRouter()
+
+
+@router.post("/api/investigations", status_code=201)
+def create_investigation(body: CreateInvestigation, request: Request):
+    repo = service(request).repo
+    return InvestigationService(repo).create(
+        request.app.state.owner_resolver(request),
+        body.model_id or repo.settings.default_model_id, body.client_request_id,
+    )
+
+
+@router.get("/api/chats/{chat_id}/investigation")
+def snapshot(chat_id: str, request: Request):
+    state, sequence = InvestigationProjection(service(request).repo).snapshot_with_watermark(scope(request, chat_id))
+    return {"snapshot": state, "sequence": sequence}
+
+
+@router.post("/api/chats/{chat_id}/investigation/actions")
+def action(chat_id: str, body: InvestigationCommand, request: Request):
+    app = service(request)
+    return InvestigationService(app.repo).apply(
+        scope(request, chat_id), body, registry_fingerprint=app.registry.fingerprint,
+    )
+
+
+@router.get("/api/chats/{chat_id}/investigation/events")
+async def events(chat_id: str, request: Request, after: int = Query(default=0, ge=0)):
+    owner = scope(request, chat_id)
+    projection = InvestigationProjection(service(request).repo)
+    raw = request.headers.get("last-event-id", "0")
+    if not raw.isascii() or not raw.isdecimal() or len(raw) > 16:
+        raise InvalidInput("Invalid investigation event cursor")
+    cursor = max(after, int(raw))
+    projection.read_ui_events(owner, cursor)
+
+    async def iterate():
+        nonlocal cursor
+        while not await request.is_disconnected():
+            frames = projection.read_ui_events(owner, cursor)
+            for frame in frames:
+                cursor = frame["id"]
+                yield f"id: {cursor}\ndata: {json.dumps(frame['payload'])}\n\n"
+            if not frames:
+                yield ": investigation heartbeat\n\n"
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(iterate(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no",
+    })

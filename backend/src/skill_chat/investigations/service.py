@@ -2,6 +2,7 @@ import copy
 import time
 from uuid import uuid4
 
+from ag_ui.core import EventType, StateSnapshotEvent
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import insert, select, update
 
@@ -90,7 +91,9 @@ class InvestigationService:
     def emit(self, connection, scope: Scope, state: dict) -> int:
         result = connection.execute(insert(investigation_ui_events).values(
             owner_id=scope.owner_id, chat_id=scope.chat_id, created=time.time(),
-            payload={"type": "STATE_SNAPSHOT", "snapshot": state},
+            payload=StateSnapshotEvent(type=EventType.STATE_SNAPSHOT, snapshot=state).model_dump(
+                mode="json", by_alias=True, exclude_none=True,
+            ),
         ))
         return int(result.inserted_primary_key[0])
 

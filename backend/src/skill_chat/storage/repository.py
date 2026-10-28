@@ -11,7 +11,7 @@ from skill_chat.config import Settings
 from skill_chat.contracts import Conflict, NotFound, Scope
 from skill_chat.storage.database import Database
 from skill_chat.storage.files import FileStore
-from skill_chat.storage.models import artifacts, attachments, chats, events, tasks, turns
+from skill_chat.storage.models import artifacts, attachments, chats, events, investigations, tasks, turns
 
 ACTIVE = ("pending", "routing", "queued", "running", "cancel_requested")
 TERMINAL = ("succeeded", "failed", "cancelled", "interrupted")
@@ -56,7 +56,7 @@ class Repository:
 
     def list_chats(self, owner_id: str) -> list[dict]:
         with self.db.engine.connect() as connection:
-            return [
+            result = [
                 dict(row)
                 for row in connection.execute(
                     select(chats)
@@ -64,6 +64,17 @@ class Repository:
                     .order_by(chats.c.created.desc())
                 ).mappings()
             ]
+            cases = {
+                row["chat_id"]: row["state"]
+                for row in connection.execute(select(investigations).where(
+                    investigations.c.owner_id == owner_id,
+                )).mappings()
+            }
+            return [{**item, "investigation": (
+                {"case_id": cases[item["id"]]["case_id"],
+                 "current_stage": cases[item["id"]]["current_stage"], "connector": "demo"}
+                if item["id"] in cases else None
+            )} for item in result]
 
     def get_chat(self, scope: Scope) -> dict:
         with self.db.engine.connect() as connection:

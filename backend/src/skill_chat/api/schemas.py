@@ -15,6 +15,11 @@ class PatchChat(Input):
     model_id: str | None = None
 
 
+class CreateInvestigation(Input):
+    client_request_id: str = Field(min_length=1, max_length=100)
+    model_id: str | None = None
+
+
 class TurnRequest(Input):
     client_request_id: str = Field(min_length=1, max_length=100)
     message: str = Field(min_length=1, max_length=100_000)

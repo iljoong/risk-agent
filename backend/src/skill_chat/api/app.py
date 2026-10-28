@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from skill_chat.agents.gateway import AgentGateway
-from skill_chat.api import artifacts, attachments, chats, events, tasks
+from skill_chat.api import artifacts, attachments, chats, events, investigations, tasks
 from skill_chat.chat.service import ChatService
 from skill_chat.config import Settings, load_settings
 from skill_chat.contracts import AppError, Gateway
@@ -110,6 +110,6 @@ def create_app(
             status_code=200 if worker_ready else 503,
         )
 
-    for routes in (chats.router, attachments.router, tasks.router, artifacts.router, events.router):
+    for routes in (chats.router, attachments.router, tasks.router, artifacts.router, events.router, investigations.router):
         app.include_router(routes)
     return app
