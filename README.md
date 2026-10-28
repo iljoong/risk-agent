@@ -72,8 +72,8 @@ Selected skills stay active for follow-up replies, including clarification answe
 
 ### Throwaway investigation UI prototype
 
-Run `npm --prefix .\web run prototype` to open **http://127.0.0.1:5175/?prototype=investigation&variant=A**.
-Compare **A** (top journey and split conversation/output), **B** (vertical workflow rail), and **C** (evidence-first desk) with the floating arrow switcher.
+Run `npm --prefix .\web run prototype` to open **http://127.0.0.1:5175/?prototype=investigation&variant=C**.
+**Selected design: C, the evidence-first desk.** Compare it with **A** (top journey and split conversation/output) and **B** (vertical workflow rail) using the floating arrow switcher.
 The development-only prototype uses the fictional `docs\scenario` pack, not real chats or live sources. Amend any stage output with a rationale; shared context and the note update, while dependent stages require re-review.
 All edits and demonstration history live only in browser memory and disappear on reload. Agent replies are simulations; AG-UI/A2UI transport, backend persistence and external saving/approvals are not implemented.
 The normal app is unchanged without `?prototype=investigation`; production builds exclude the prototype.

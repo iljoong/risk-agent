@@ -1,4 +1,5 @@
 // Throwaway: compare three investigation layouts on /?prototype=investigation&variant=A|B|C.
+// User selected C (Evidence desk); keep the alternatives for prototype comparison.
 // React owns the workflow; agent replies and shared-state updates are local simulations, not AG-UI/A2UI.
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -46,7 +47,7 @@ const variantKeys: PrototypeVariant[] = ['A', 'B', 'C']
 export default function InvestigationPrototype() {
   const [variant, setVariant] = useState<PrototypeVariant>(() => {
     const key = new URLSearchParams(window.location.search).get('variant')
-    return variantKeys.find(item => item === key) ?? 'A'
+    return variantKeys.find(item => item === key) ?? 'C'
   })
   const [selected, setSelected] = useState(1)
   const [current, setCurrent] = useState(1)
@@ -84,7 +85,7 @@ export default function InvestigationPrototype() {
   useEffect(() => {
     function restoreVariant() {
       const key = new URLSearchParams(window.location.search).get('variant')
-      setVariant(variantKeys.find(item => item === key) ?? 'A')
+      setVariant(variantKeys.find(item => item === key) ?? 'C')
     }
     window.addEventListener('popstate', restoreVariant)
     return () => window.removeEventListener('popstate', restoreVariant)
@@ -295,7 +296,7 @@ export default function InvestigationPrototype() {
         <div className="ip-header-meta"><span className="ip-priority">High / original AML priority</span><span>ALT-2041</span></div>
         <button className="ip-secondary" onClick={() => setView('record')}><FileText size={15} />Reviewed note</button>
       </header>
-      <div className="ip-layout-description">{variant === 'A' ? 'A / Guided workbench. Persistent journey, conversation on the left, editable stage output on the right. Recommended.' : variant === 'B' ? 'B / Workflow rail. Stage navigation at the side; output gets the canvas and the agent becomes a compact assistant.' : 'C / Evidence desk. Transactions and sources take the lead; conversation and stage output sit beneath.'}</div>
+      <div className="ip-layout-description">{variant === 'A' ? 'A / Guided workbench. Persistent journey, conversation on the left, editable stage output on the right.' : variant === 'B' ? 'B / Workflow rail. Stage navigation at the side; output gets the canvas and the agent becomes a compact assistant.' : 'C / Evidence desk. Selected design. Transactions and sources take the lead; conversation and stage output sit beneath.'}</div>
       {variant !== 'B' && stageTracker}
       {sharedStrip}
       <div className="ip-case-strip"><div><strong>Original alert</strong><span>Rapid movement to a newly observed beneficiary</span></div><div><strong>Proposed next action / not a decision</strong><span>Corroborate invoice purpose; route the access gap</span></div>
