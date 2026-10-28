@@ -2,8 +2,9 @@ import { Check, FileText, MessageSquare, MoreHorizontal, Pencil, Plus, Trash2, U
 import { useState } from 'react'
 import type { ChatSummary } from '../api/types'
 
-export function ChatSidebar({ chats, current, open, onNew, onOpen, onRename, onDelete, onAccount, onClose }: {
+export function ChatSidebar({ chats, current, open, onNew, onNewInvestigation, creating, onOpen, onRename, onDelete, onAccount, onClose }: {
   chats: ChatSummary[]; current: string | null; open: boolean; onNew: () => void; onOpen: (id: string) => void;
+  onNewInvestigation: () => void; creating: boolean;
   onRename: (id: string, title: string) => Promise<void>; onDelete: (id: string) => Promise<void>;
   onAccount: () => void; onClose: () => void
 }) {
@@ -11,18 +12,19 @@ export function ChatSidebar({ chats, current, open, onNew, onOpen, onRename, onD
   const [title, setTitle] = useState('')
   const [menu, setMenu] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
-  return <aside className={`sidebar ${open ? 'sidebar-open' : ''}`} aria-label="Chat history">
+  return <aside className={`sidebar ${open ? 'sidebar-open' : ''}`} aria-label="Investigation sessions">
     <div className="sidebar-brand"><div className="brand-mark"><FileText size={19} /></div><strong>Workroom</strong>
       <button className="icon-button mobile-close" aria-label="Close history" onClick={onClose}><X size={18} /></button></div>
-    <button className="new-chat" onClick={onNew}><Plus size={17} /> New chat</button>
-    <div className="history-label">Your conversations</div>
+    <button className="new-chat" disabled={creating} onClick={onNewInvestigation}><Plus size={17} /> New investigation</button>
+    <button className="new-conversation" onClick={onNew}>New conversation</button>
+    <div className="history-label">Investigation sessions</div>
     <nav className="chat-list">
       {!chats.length && <p className="empty-history">Your conversations will appear here.</p>}
       {chats.map(chat => <div className={`history-row ${current === chat.id ? 'current' : ''}`} key={chat.id}>
         {editing === chat.id ? <form onSubmit={event => { event.preventDefault(); if (title.trim()) void onRename(chat.id, title.trim()).then(() => setEditing(null)) }}>
           <input aria-label="Chat title" value={title} onChange={event => setTitle(event.target.value)} autoFocus maxLength={200} />
           <button aria-label="Save title"><Check size={15} /></button></form> : <>
-          <button className="history-link" onClick={() => onOpen(chat.id)}><MessageSquare size={15} /><span>{chat.title}</span></button>
+          <button className="history-link" onClick={() => onOpen(chat.id)}>{chat.investigation ? <FileText size={15} /> : <MessageSquare size={15} />}<span>{chat.title}</span></button>
           <button className="history-more icon-button" aria-label={`Options for ${chat.title}`} onClick={() => setMenu(menu === chat.id ? null : chat.id)}><MoreHorizontal size={15} /></button>
           {menu === chat.id && <div className="history-menu">
             <button onClick={() => { setEditing(chat.id); setTitle(chat.title); setMenu(null) }}><Pencil size={13} /> Rename</button>

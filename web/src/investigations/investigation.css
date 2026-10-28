@@ -1,0 +1,45 @@
+.investigation-page{flex:1;overflow:auto;background:#f8fafb;color:#20333e;padding:22px 26px}
+.investigation-page h1{font-size:23px;font-weight:600;letter-spacing:-.4px;margin:0 0 7px}
+.investigation-page h2{font-size:17px;font-weight:600;margin:0 0 14px}
+.investigation-page h3{font-size:14px;margin:6px 0}
+.investigation-page p{line-height:1.6;max-width:78ch}
+.investigation-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}
+.investigation-heading p{font-size:12px;color:#516875;margin:0}
+.investigation-heading>div:last-child{display:flex;align-items:center;gap:10px;font-size:12px;flex-wrap:wrap}
+.investigation-page button{border:1px solid #c9d6dd;border-radius:6px;background:#fff;padding:7px 10px;font-size:12px}
+.investigation-page button:hover:not(:disabled){background:#eaf1f5}
+.investigation-page .investigation-primary{background:#245d78;color:#fff;border-color:#245d78}
+.original-alert{font-size:12px;color:#695332;padding:10px 0}
+.workflow-stages{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0 0 24px}
+.workflow-stages button{padding:10px 8px;text-align:left;background:#edf2f5;border:1px solid transparent;border-bottom:3px solid transparent}
+.workflow-stages span{display:block;font-weight:600}
+.workflow-stages small{display:block;margin-top:8px;color:#566c79;font-size:10px}
+.workflow-stages button[aria-current=step]{border-bottom-color:#245d78}
+.workflow-stages button[aria-pressed=true]{border-top-color:#a6becb;border-left-color:#a6becb;border-right-color:#a6becb;background:#fff}
+.evidence-desk{display:grid;grid-template-columns:minmax(230px,1fr) minmax(0,1.65fr);gap:30px}
+.evidence-desk>div{min-width:0}
+.transaction-timeline{list-style:none;padding:0;margin:0}
+.transaction-timeline li{display:grid;grid-template-columns:68px 90px 1fr;gap:10px;padding:13px 0;border-bottom:1px solid #dde5e9;font-size:12px}
+.transaction-timeline time{color:#607987}.transaction-timeline strong{font-variant-numeric:tabular-nums}.transaction-timeline small{display:block;color:#607987;font-size:10px;margin-top:5px}
+.evidence-register{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.evidence-register article{border-left:3px solid #9aafbb;background:#fff;padding:12px;font-size:12px}
+.evidence-register small{color:#617885;font-size:10px}.evidence-register p{margin:6px 0}.evidence-register button{margin-right:5px}
+.investigation-warning{color:#775b2c;background:#fff8e9;padding:10px;font-size:12px}
+.source-inspection{background:#eef4f7;padding:15px;margin-top:12px;overflow-wrap:anywhere}
+.source-inspection pre{white-space:pre-wrap;max-height:300px;overflow:auto;font-size:11px}
+.investigation-working{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);margin-top:28px;border-top:1px solid #ccd9e0;gap:28px;padding-top:22px}
+.investigation-output{min-width:0}.investigation-output h2 small{font-size:11px;font-weight:400;color:#607987}
+.investigation-form{display:grid;gap:12px;margin:15px 0}.investigation-page label{display:grid;gap:7px;font-size:12px;line-height:1.6}
+.investigation-page textarea,.investigation-page input{width:100%;border:1px solid #bdcdd6;border-radius:5px;padding:10px;color:#20333e;background:white;line-height:1.6;resize:vertical}
+.investigation-page textarea:focus-visible,.investigation-page input:focus-visible,.investigation-page button:focus-visible,.investigation-page summary:focus-visible{outline:2px solid #276886;outline-offset:3px}
+.investigation-page details{margin-top:14px;font-size:12px}.investigation-page summary{cursor:pointer;padding:5px 0}
+.investigation-output>button{margin:0 5px 5px 0}
+.investigation-conversation{display:flex;flex-direction:column;min-width:0;min-height:450px;background:#fff;padding:16px;border:1px solid #dce5eb;border-radius:8px}
+.investigation-conversation>p{font-size:12px;color:#617885;margin-top:0}.investigation-conversation>button{align-self:flex-start;margin-bottom:12px}
+.investigation-conversation .conversation-scroll{max-height:500px;min-height:120px}.investigation-conversation .composer-wrap{padding:12px 0}
+.investigation-conversation .welcome{min-height:200px;padding:15px}.investigation-conversation .welcome h1{font-size:20px}.investigation-conversation .starter-list{display:none}
+.investigation-review{background:#fff;border:1px solid #cbd9e1;padding:20px;margin-top:24px}.investigation-review button{margin:12px 8px 0 0}
+.prepared-note,.preserve-lines{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.7}.prepared-note{border-top:1px solid #cbd9e1;padding-top:15px;max-height:500px;overflow:auto}
+.sidebar .new-chat{margin-bottom:8px}.new-conversation{padding:8px 16px;text-align:left;font-size:12px;margin-bottom:20px}
+@media(max-width:1250px){.evidence-desk,.investigation-working{grid-template-columns:1fr}.evidence-desk{gap:20px}.transaction-timeline li{grid-template-columns:80px 110px 1fr}}
+@media(max-width:650px){.investigation-page{padding:18px 14px}.investigation-heading{flex-direction:column}.workflow-stages{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.evidence-register{grid-template-columns:1fr}.transaction-timeline li{grid-template-columns:60px 80px 1fr;font-size:11px;gap:6px}}

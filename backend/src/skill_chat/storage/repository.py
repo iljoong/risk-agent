@@ -230,8 +230,16 @@ class Repository:
             ]
 
     def snapshot(self, scope: Scope) -> dict:
+        with self.db.engine.connect() as connection:
+            case = connection.execute(select(investigations.c.state).where(
+                self.owned(investigations, scope),
+            )).scalar_one_or_none()
         return {
             **self.get_chat(scope),
+            "investigation": (
+                {"case_id": case["case_id"], "current_stage": case["current_stage"], "connector": "demo"}
+                if case else None
+            ),
             "turns": self.list_records(turns, scope),
             "attachments": [
                 {key: value for key, value in item.items() if key != "pages"}

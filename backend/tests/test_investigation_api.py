@@ -35,6 +35,7 @@ def test_investigation_routes_create_amend_and_enforce_origin_and_scope(client):
     assert client.get(f"{path}/events?after=-1").status_code == 422
     summary = next(item for item in client.get("/api/chats").json() if item["id"] == chat_id)
     assert summary["investigation"]["case_id"] == "CASE-1041"
+    assert client.get(f"/api/chats/{chat_id}").json()["investigation"] == summary["investigation"]
 
 
 def test_snapshot_watermark_and_projection_replay_are_consistent_and_scoped(repository):

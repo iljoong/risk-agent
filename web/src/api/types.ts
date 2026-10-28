@@ -9,7 +9,10 @@ export interface Turn { id: string; request: TurnRequest; state: State; mode: st
 export interface Attachment { id: string; filename: string; state: string; warnings: string[]; error: string | null }
 export interface Task { id: string; turn_id: string; state: State; stage: string; error: string | null }
 export interface Artifact { id: string; title: string; version: number; text_content: string; parent_version_id: string | null; turn_id?: string }
-export interface ChatSummary { id: string; title: string; model_id: string }
+export interface ChatSummary {
+  id: string; title: string; model_id: string;
+  investigation?: { case_id: string; current_stage: string; connector: 'demo' } | null
+}
 export interface Chat extends ChatSummary { turns: Turn[]; attachments: Attachment[]; tasks: Task[]; artifacts: Artifact[] }
 export interface Receipt { turn_id: string; mode: string; task_id: string | null; events_url: string }
 export interface TurnEvent {

@@ -116,7 +116,7 @@ it('keeps a slash-selected skill for clarification replies until explicitly clea
   await user.click(screen.getByRole('button', { name: 'Send message' }))
   await waitFor(() => expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue(''))
   expect(screen.getByRole('button', { name: 'Clear skill' })).toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: 'New chat' }))
+  await user.click(screen.getByRole('button', { name: 'New conversation' }))
   await user.click(screen.getByRole('button', { name: 'Clarification flow' }))
   await screen.findByRole('button', { name: 'Clear skill' })
   await user.type(screen.getByRole('textbox', { name: 'Message' }), 'Bidding alone.')
