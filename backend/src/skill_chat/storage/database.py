@@ -5,7 +5,7 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
-from sqlalchemy import create_engine, event, inspect
+from sqlalchemy import MetaData, create_engine, event, inspect
 
 from skill_chat.config import Settings
 from skill_chat.storage.models import metadata
@@ -36,11 +36,19 @@ class Database:
             configuration.attributes["connection"] = connection
             tables = inspect(connection).get_table_names()
             if tables and "alembic_version" not in tables:
-                if compare_metadata(MigrationContext.configure(connection), metadata):
+                context = MigrationContext.configure(connection)
+                legacy = MetaData()
+                for name in ("chats", "turns", "attachments", "tasks", "events", "artifacts", "worker_status"):
+                    metadata.tables[name].to_metadata(legacy)
+                if not compare_metadata(context, metadata):
+                    version = "0002"
+                elif not compare_metadata(context, legacy):
+                    version = "0001"
+                else:
                     raise RuntimeError(
                         "Unknown unversioned database schema; back up the data and migrate explicitly"
                     )
-                command.stamp(configuration, "0001")
+                command.stamp(configuration, version)
             command.upgrade(configuration, "head")
 
     @contextmanager

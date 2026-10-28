@@ -98,3 +98,38 @@ worker_status = Table(
     Column("id", String, primary_key=True),
     Column("heartbeat", Float, nullable=False),
 )
+investigations = Table(
+    "investigations", metadata, *scoped_columns(),
+    Column("creation_request_id", String, nullable=False),
+    Column("model_id", String, nullable=False),
+    Column("revision", Integer, nullable=False),
+    Column("state", JSON, nullable=False),
+    UniqueConstraint("owner_id", "chat_id"),
+    UniqueConstraint("owner_id", "creation_request_id"),
+)
+investigation_commands = Table(
+    "investigation_commands", metadata, *scoped_columns(),
+    Column("client_request_id", String, nullable=False),
+    Column("request", JSON, nullable=False),
+    Column("receipt", JSON, nullable=False),
+    UniqueConstraint("owner_id", "chat_id", "client_request_id"),
+)
+investigation_revisions = Table(
+    "investigation_revisions", metadata, *scoped_columns(),
+    Column("revision", Integer, nullable=False),
+    Column("record", JSON, nullable=False),
+)
+investigation_ui_events = Table(
+    "investigation_ui_events", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("owner_id", String, nullable=False, index=True),
+    Column("chat_id", String, ForeignKey("chats.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("created", Float, nullable=False),
+    Column("payload", JSON, nullable=False),
+)
+investigation_candidates = Table(
+    "investigation_candidates", metadata, *scoped_columns(),
+    Column("task_id", String, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, unique=True),
+    Column("base_revision", Integer, nullable=False),
+    Column("payload", JSON, nullable=False),
+)
