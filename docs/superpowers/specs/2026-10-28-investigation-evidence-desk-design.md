@@ -1,7 +1,7 @@
 # Investigation evidence desk with demo connector
 
 Date: 2026-10-28
-Status: Design for approval; not implemented.
+Status: Approved by the user on 2026-10-28; implementation pending.
 
 ## Intent and decisions
 
