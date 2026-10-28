@@ -1,5 +1,5 @@
-// Three throwaway centered-chat layouts on /?prototype=centered-chat&variant=A|B|C.
-// Question: which right-hand stage layout best supports an uninterrupted conversation?
+// Throwaway investigation layouts on /?prototype=centered-chat&variant=A|B|C.
+// Revised A: case work in the center, with the conversation in a resizable right rail.
 import { useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { ArrowUp, Check, ChevronRight, FileText, GripHorizontal, GripVertical, History, MessageSquare, Moon, PanelLeft, PanelRight, Plus, Search, ShieldCheck, Sparkles, Sun, X } from 'lucide-react'
@@ -145,6 +145,11 @@ function StageTracker({ ui, vertical = false }: { ui: Model; vertical?: boolean 
 
 function ChatThread({ ui, compact = false }: { ui: Model; compact?: boolean }) {
   const end = useRef<HTMLDivElement>(null)
+  function inspect(tab: Tab) {
+    ui.setTab(tab)
+    if (ui.variant !== 'A') ui.setRightOpen(true)
+    else if (window.innerWidth <= 1000) ui.setRightOpen(false)
+  }
   return <>
     <div className="cp-thread" aria-label="Investigation conversation">
       <div className="cp-thread-inner">
@@ -155,9 +160,9 @@ function ChatThread({ ui, compact = false }: { ui: Model; compact?: boolean }) {
           {message.role === 'assistant' && index === 1 && <div className="cp-citations">
             {['E-01', 'E-03', 'GAP-01'].map(id => <button key={id} onClick={() => {
               const evidence = ui.snapshot.evidence.find(item => item.id === id)
-              ui.setSourceId(evidence?.source_ids[0] ?? null); ui.setTab('Evidence'); ui.setRightOpen(true)
+              ui.setSourceId(evidence?.source_ids[0] ?? null); inspect('Evidence')
             }}><FileText size={12} />{id}</button>)}
-            <button onClick={() => { ui.setRightOpen(true); ui.setTab('Output') }}>Inspect stage output <ChevronRight size={13} /></button>
+            <button onClick={() => inspect('Output')}>Inspect stage output <ChevronRight size={13} /></button>
           </div>}
         </article>)}
         <div ref={end} />
@@ -236,7 +241,7 @@ function LeftResize({ ui }: { ui: Model }) {
   return ui.leftOpen ? <ResizeHandle label="Resize sessions sidebar" value={ui.left} onResize={size => ui.resize('left', size)} /> : null
 }
 function RightResize({ ui }: { ui: Model }) {
-  return ui.rightOpen ? <ResizeHandle label="Resize stage sidebar" side="right" value={ui.right} onResize={size => ui.resize('right', size)} /> : null
+  return ui.rightOpen ? <ResizeHandle label={ui.variant === 'A' ? 'Resize chat sidebar' : 'Resize stage sidebar'} side="right" value={ui.right} onResize={size => ui.resize('right', size)} /> : null
 }
 function CaseHeading({ ui }: { ui: Model }) {
   return <header className="cp-case-heading"><div><small>{ui.snapshot.case_id} / fictional investigation</small><h1>Harbour Components Ltd</h1></div>
@@ -246,16 +251,24 @@ function CaseHeading({ ui }: { ui: Model }) {
 export function VariantA({ ui, history, onOpen }: { ui: Model; history: ChatSummary[]; onOpen: Props['onOpen'] }) {
   return <div className="cp-body cp-variant-a">
     <HistoryRail ui={ui} history={history} onOpen={onOpen} /><LeftResize ui={ui} />
-    <main className="cp-main"><CaseHeading ui={ui} /><StageTracker ui={ui} /><ChatThread ui={ui} /></main>
-    <RightResize ui={ui} />
-    <aside className={`cp-inspector ${ui.rightOpen ? 'cp-open' : ''}`} aria-label="Stage details">
-      <RailHeader ui={ui} /><div className="cp-tabs" role="tablist" aria-label="Stage details view">
+    <main className="cp-main cp-stage-workspace" aria-label="Investigation stage workspace">
+      <CaseHeading ui={ui} /><StageTracker ui={ui} />
+      <div className="cp-tabs" role="tablist" aria-label="Stage details view">
         {(['Output', 'Evidence', 'Review'] as const).map(tab => <button key={tab} role="tab" id={`cp-tab-${tab}`} aria-controls="cp-details-panel" aria-selected={ui.tab === tab} onClick={() => ui.setTab(tab)}>{tab}</button>)}
       </div>
-      <div className="cp-rail-scroll" id="cp-details-panel" role="tabpanel" aria-labelledby={`cp-tab-${ui.tab}`}>
-        {ui.tab === 'Output' ? <OutputEditor ui={ui} /> : ui.tab === 'Evidence' ? <EvidenceInspector ui={ui} /> : <ReviewSummary ui={ui} />}
+      <div className="cp-rail-scroll cp-workspace-scroll" id="cp-details-panel" role="tabpanel" aria-labelledby={`cp-tab-${ui.tab}`}>
+        <div className="cp-workspace-content">
+          {ui.tab === 'Output' ? <OutputEditor ui={ui} /> : ui.tab === 'Evidence' ? <EvidenceInspector ui={ui} /> : <ReviewSummary ui={ui} />}
+        </div>
       </div>
       <footer className="cp-rail-footer">Inspecting {stageNames[ui.stage]}. Current: {stageNames[ui.snapshot.current_stage]}.</footer>
+    </main>
+    <RightResize ui={ui} />
+    <aside className={`cp-inspector cp-chat-rail ${ui.rightOpen ? 'cp-open' : ''}`} aria-label="Investigation assistant">
+      <header className="cp-rail-heading"><div><small>{ui.snapshot.case_id} / {stageNames[ui.stage]}</small><h2>Investigation assistant</h2></div>
+        <button aria-label="Close conversation sidebar" onClick={() => ui.setRightOpen(false)}><PanelRight size={17} /></button>
+      </header>
+      <ChatThread ui={ui} />
     </aside>
   </div>
 }
@@ -306,13 +319,13 @@ export default function CenteredChatPrototype(props: Props) {
       <div className="cp-topbar-actions"><span className="cp-prototype-badge">Layout prototype</span>
         <select aria-label="Preview model" value={ui.model} onChange={event => ui.setModel(event.target.value)}>{[{ id: 'preview', label: 'No inference / preview' }, ...ui.models].map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select>
         <button className="cp-icon" aria-label="Dark mode" aria-pressed={ui.dark} onClick={() => ui.setDark(!ui.dark)}>{ui.dark ? <Sun size={18} /> : <Moon size={18} />}</button>
-        <button className="cp-icon" aria-label="Toggle stage sidebar" aria-expanded={ui.rightOpen} onClick={() => { ui.setRightOpen(!ui.rightOpen); if (window.innerWidth <= 1000) ui.setLeftOpen(false) }}><PanelRight size={18} /></button>
+        <button className="cp-icon" aria-label={ui.variant === 'A' ? 'Toggle conversation sidebar' : 'Toggle stage sidebar'} aria-expanded={ui.rightOpen} onClick={() => { ui.setRightOpen(!ui.rightOpen); if (window.innerWidth <= 1000) ui.setLeftOpen(false) }}><PanelRight size={18} /></button>
       </div>
     </header>
     <Variant ui={ui} history={props.history} onOpen={props.onOpen} />
     <div className="cp-notice" role="status"><Check size={12} /><span>{ui.notice}</span></div>
     <PrototypeSwitcher variant={ui.variant} onChange={ui.changeVariant} state={{
-      variant: ui.variant, source: ui.source, viewedStage: ui.stage, currentStage: ui.snapshot.current_stage,
+      variant: ui.variant, chatLocation: ui.variant === 'A' ? 'right sidebar' : 'center', source: ui.source, viewedStage: ui.stage, currentStage: ui.snapshot.current_stage,
       localRevision: ui.snapshot.revision, leftWidth: ui.left, rightWidth: ui.right, dockPercent: ui.dock,
       leftOpen: ui.leftOpen, rightOpen: ui.rightOpen, theme: ui.dark ? 'dark' : 'light', tab: ui.tab,
       sourceId: ui.sourceId, selectedSkill: ui.selectedSkill, model: ui.model, drafts: ui.drafts, reasons: ui.reasons,

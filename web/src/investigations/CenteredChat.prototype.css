@@ -126,6 +126,22 @@
 .cp-warning { border-left: 2px solid var(--p-warning); background: var(--p-warning-bg); color: var(--p-warning); padding: 12px; margin: 16px 0; font-size: 11px; line-height: 1.8 }
 .cp-review ul { padding-left: 18px; line-height: 1.9 }
 .cp-review li { margin-bottom: 8px }
+.cp-stage-workspace > .cp-tabs { margin: 0 24px; padding: 0; background: var(--p-surface); border: 1px solid var(--p-border); border-radius: 10px 10px 0 0 }
+.cp-stage-workspace > .cp-tabs button { flex: 0 1 160px }
+.cp-workspace-scroll { padding: 0 24px 24px }
+.cp-workspace-content { max-width: 1000px; margin: auto; padding: 24px; background: var(--p-surface); border: 1px solid var(--p-border); border-top: 0; border-radius: 0 0 10px 10px }
+.cp-stage-workspace .cp-output h3, .cp-stage-workspace .cp-evidence h3, .cp-stage-workspace .cp-review h3 { font-size: 18px }
+.cp-stage-workspace .cp-output textarea { min-height: 240px }
+.cp-stage-workspace .cp-evidence { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px }
+.cp-stage-workspace .cp-evidence > :not(.cp-evidence-item) { grid-column: 1 / -1 }
+.cp-stage-workspace .cp-evidence-item { border: 1px solid var(--p-border); border-left: 3px solid var(--p-accent); padding: 16px; border-radius: 8px; background: var(--p-elevated) }
+.cp-chat-rail .cp-thread-inner { padding: 18px 16px }
+.cp-chat-rail .cp-user { margin-left: 12px; padding: 12px; background: var(--p-elevated) }
+.cp-chat-rail .cp-message { font-size: 12px; margin-bottom: 22px }
+.cp-chat-rail .cp-conversation-context { margin-bottom: 18px !important; align-items: flex-start }
+.cp-chat-rail .cp-compose-area { padding: 12px 14px; border-top: 1px solid var(--p-border) }
+.cp-chat-rail .cp-directions { gap: 5px }
+.cp-chat-rail .cp-directions button { font-size: 9px; padding: 5px 6px }
 .cp-variant-b .cp-main { background: var(--p-surface) }
 .cp-variant-b .cp-case-heading { padding-bottom: 13px }
 .cp-brief-line { display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--p-border); padding: 0 30px 17px; color: var(--p-muted); font-size: 10px; flex-shrink: 0 }
@@ -194,6 +210,10 @@
   .cp-stages { gap: 2px; padding: 0 10px 10px }
   .cp-shell .cp-stages button { font-size: 9px }
   .cp-compose-area { padding: 10px 14px }
+  .cp-stage-workspace > .cp-tabs { margin-inline: 14px }
+  .cp-workspace-scroll { padding: 0 14px 14px }
+  .cp-workspace-content { padding: 16px }
+  .cp-stage-workspace .cp-evidence { grid-template-columns: 1fr }
   .cp-directions { display: none }
   .cp-brief-line, .cp-case-ribbon { padding-inline: 18px; font-size: 9px }
   .cp-brief-line > span { display: none }

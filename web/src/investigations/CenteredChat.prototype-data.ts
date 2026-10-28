@@ -1,7 +1,7 @@
 import type { Investigation } from './types'
 
 export const prototypeVariants = [
-  { key: 'A', name: 'Stage inspector' },
+  { key: 'A', name: 'Workspace + chat rail' },
   { key: 'B', name: 'Workflow outline' },
   { key: 'C', name: 'Split review dock' },
 ] as const
