@@ -24,6 +24,8 @@ from skill_chat.storage.models import (
     investigation_revisions,
     investigation_ui_events,
     investigations,
+    tasks,
+    turns,
 )
 from skill_chat.storage.repository import Repository
 
@@ -152,6 +154,34 @@ class InvestigationService:
             scope, turn["id"], chat["model_id"], None, fingerprint, connection=connection,
         )
         return {"turn_id": turn["id"], "task_id": task["id"]}
+
+    def submit_agent(self, scope: Scope, request: dict, fingerprint: str) -> dict:
+        from skill_chat.tasks.service import TaskService
+
+        with self.repo.db.transaction() as connection:
+            existing = connection.execute(select(turns).where(
+                self.repo.owned(turns, scope), turns.c.client_request_id == request["client_request_id"],
+            )).mappings().first()
+            if existing:
+                public = {key: value for key, value in existing["request"].items() if key != "investigation"}
+                if public != request:
+                    raise Conflict("Request ID was reused with different content")
+                task = connection.execute(select(tasks).where(
+                    self.repo.owned(tasks, scope), tasks.c.turn_id == existing["id"],
+                )).mappings().one()
+                return {"turn_id": existing["id"], "task_id": task["id"], "mode": "background",
+                        "events_url": f"/api/chats/{scope.chat_id}/turns/{existing['id']}/events"}
+            state = copy.deepcopy(self.row(connection, scope)["state"])
+            internal = {**request, "investigation": {
+                "operation": "agent", "base_revision": state["revision"], "snapshot": state,
+            }}
+            turn, _ = self.repo.create_turn(scope, internal, connection=connection)
+            task = TaskService(self.repo).enqueue(
+                scope, turn["id"], request["model_id"], request.get("skill_id"), fingerprint,
+                connection=connection,
+            )
+            return {"turn_id": turn["id"], "task_id": task["id"], "mode": "background",
+                    "events_url": f"/api/chats/{scope.chat_id}/turns/{turn['id']}/events"}
 
     def stage_candidate(self, scope: Scope, task_id: str, base_revision: int, payload: dict):
         from skill_chat.storage.models import tasks

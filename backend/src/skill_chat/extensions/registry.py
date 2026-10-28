@@ -118,6 +118,7 @@ def discover_extensions(skills_dir: Path, tools_dir: Path) -> ExtensionRegistry:
 def build_registry(repository) -> ExtensionRegistry:
     from skill_chat.tools.artifacts import artifact_tools
     from skill_chat.tools.documents import document_tools
+    from skill_chat.tools.investigations import investigation_tools
     from skill_chat.tools.references import skill_reference_tools
     from skill_chat.tools.webiq import webiq_tools
 
@@ -128,5 +129,6 @@ def build_registry(repository) -> ExtensionRegistry:
         + artifact_tools(repository)
         + skill_reference_tools(registry)
         + webiq_tools(repository.settings)
+        + investigation_tools(repository)
     )
     return registry

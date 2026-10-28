@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from skill_chat.agents.gateway import AgentGateway
 from skill_chat.config import load_settings
-from skill_chat.contracts import AgentRequest, AppError, Gateway, InvalidInput, Scope
+from skill_chat.contracts import AgentRequest, AppError, Conflict, Gateway, InvalidInput, Scope
 from skill_chat.documents.context import ContextBuilder
 from skill_chat.documents.ingestion import AttachmentService
 from skill_chat.extensions.registry import ExtensionRegistry, build_registry
@@ -47,6 +47,9 @@ class Worker:
         if request.get("investigation", {}).get("operation") == "prepare":
             await collect_sources(InvestigationService(self.repo), scope, task, self.connector, self.tasks)
             return
+        execution = request.get("investigation")
+        if execution and InvestigationService(self.repo).get(scope)["revision"] != execution["base_revision"]:
+            raise Conflict("Investigation changed since this request; submit a new analysis request")
         attachments = AttachmentService(self.repo)
         for attachment_id in request.get("attachment_ids", []):
             self.tasks.stage(scope, task["id"], "Reading attached PDF")

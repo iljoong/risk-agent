@@ -76,6 +76,18 @@ class ContextBuilder:
         if len(question.encode()) > budget // 2:
             raise Unavailable("Message is too large for the selected model's context budget")
         budget -= len(question.encode())
+        if current_turn_id:
+            execution = self.repo.get(turns, scope, current_turn_id)["request"].get("investigation")
+            if execution:
+                from skill_chat.investigations.context import (
+                    INVESTIGATION_INSTRUCTIONS,
+                    build_investigation_context,
+                )
+
+                messages[0].content += "\n" + INVESTIGATION_INSTRUCTIONS
+                context = build_investigation_context(execution["snapshot"], budget // 2)
+                messages.append(ContextMessage(role="user", content=context))
+                budget -= len(context.encode())
         if artifact_version_id:
             item = self.repo.get(artifacts, scope, artifact_version_id)
             if item["state"] != "published":

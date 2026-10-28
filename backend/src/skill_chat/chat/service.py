@@ -7,7 +7,7 @@ from skill_chat.chat.routing import Router
 from skill_chat.contracts import AgentRequest, AppError, Gateway, InvalidInput, Scope, Unavailable
 from skill_chat.documents.context import ContextBuilder
 from skill_chat.extensions.registry import ExtensionRegistry
-from skill_chat.storage.models import attachments, turns
+from skill_chat.storage.models import attachments, investigations, turns
 from skill_chat.storage.repository import TERMINAL, Repository
 from skill_chat.tasks.service import TaskService
 
@@ -45,6 +45,10 @@ class ChatService:
             from skill_chat.artifacts.service import ArtifactService
 
             ArtifactService(self.repo).get(scope, request["artifact_version_id"])
+        if self.repo.list_records(investigations, scope):
+            from skill_chat.investigations.service import InvestigationService
+
+            return InvestigationService(self.repo).submit_agent(scope, request, self.registry.fingerprint)
         turn, created = self.repo.create_turn(scope, request)
         if not created:
             for _ in range(60):
