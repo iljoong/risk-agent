@@ -8,6 +8,8 @@ The optional `/customer-research` skill builds a cited public-web/news brief abo
 
 The current [product specification](docs/superpowers/specs/2026-10-27-rci-agent-design.md) and [transition scope](docs/superpowers/plans/2026-10-27-rci-agent-transition.md) replace the previous domain-specific design and planning documents. Operational commands below remain the source of truth for running the app.
 
+For the proposed Azure production architecture, database and worker migration, and Durable Functions assessment, see [Deployment guidance](deployment/README.md). This is a target design, not an implemented production deployment.
+
 ## Prerequisites
 
 - Windows, Python 3.11 or newer (verified with Python 3.12), and Node.js 22.12 or newer.
@@ -75,6 +77,8 @@ npm --prefix .\web run dev -- --host 0.0.0.0 --port 5173
 Open **http://127.0.0.1:5173**. Use the exact configured frontend origin, not a different localhost spelling. The Vite development server proxies `/api` and `/health` to port 8000. If that port is occupied, choose a free API port and set `VITE_API_BASE_URL` in `web\.env.local` to the API URL; restart the UI. Keep `APP_FRONTEND_ORIGIN` aligned with the UI's actual origin.
 
 The frontend listens on all IPv4 interfaces for temporary remote testing; restrict port 5173 to your client IP in the Azure NSG and Windows Firewall. To permit your public frontend URL, add `APP_REMOTE_FRONTEND_ORIGIN=http://YOUR-VM-PUBLIC-IP:5173` to `.env` and restart both API and worker. This allows one exact additional origin; other origins and cross-site mutations remain blocked. The frontend proxies API requests with a loopback upstream host; keep port 8000 private and the API bound to loopback. The app still has one shared local workspace, no login and no HTTPS, so use fictional data only. Remove the remote-origin setting and use `--host 127.0.0.1` to return to local-only access.
+
+Request IDs use browser cryptographic randomness even on HTTP origins where `crypto.randomUUID()` is unavailable. If an older tab shows `crypto.randomUUID is not a function`, reload it to load the updated frontend. This compatibility fallback does not encrypt HTTP traffic; use HTTPS and authentication for ongoing remote access.
 
 The model selector comes from `APP_MODELS`; changing a chat's model affects future turns only. Ask a question or attach a text-based PDF and ask, for example: "Summarize the evidence, cite the relevant pages, and list gaps or questions for review." The welcome starters prepare ordinary chat prompts; they do not automatically select a skill. Choose an installed skill from Skills or type its slash command only when you want that extension. Skill selection popups show names only, without descriptions.
 

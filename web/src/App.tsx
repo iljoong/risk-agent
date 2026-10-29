@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { FileText, PanelLeft, PanelRight, X } from 'lucide-react'
 import { api } from './api/client'
+import { createRequestId } from './api/requestId'
 import { subscribeTurn } from './api/events'
 import { isActive } from './api/types'
 import type { Artifact, Attachment, Chat, ChatSummary, ModelChoice, Skill } from './api/types'
@@ -170,7 +171,7 @@ export default function App() {
     try {
       const id = await ensureChat()
       const receipt = await api.send(id, {
-        client_request_id: crypto.randomUUID(), message, model_id: model,
+        client_request_id: createRequestId(), message, model_id: model,
         skill_id: selected?.id ?? null, attachment_ids: files.map(file => file.id),
         artifact_version_id: contextArtifact?.id ?? null,
       })
@@ -217,7 +218,7 @@ export default function App() {
   async function newInvestigation() {
     if (!model || creating) return
     setCreating(true); setError('')
-    creationRequest.current ??= crypto.randomUUID()
+    creationRequest.current ??= createRequestId()
     try {
       const created = await investigations.create(model, creationRequest.current)
       creationRequest.current = null
@@ -230,7 +231,7 @@ export default function App() {
     if (!model || creating) return
     if (alert.chat_id) { await openChat(alert.chat_id); return }
     setCreating(true); setError('')
-    if (alertRequest.current?.alert !== alert.id) alertRequest.current = { alert: alert.id, id: crypto.randomUUID() }
+    if (alertRequest.current?.alert !== alert.id) alertRequest.current = { alert: alert.id, id: createRequestId() }
     try {
       const opened = await investigations.openAlert(alert.id, model, alertRequest.current.id)
       alertRequest.current = null

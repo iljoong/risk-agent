@@ -33,6 +33,9 @@ test('PDF skill runs independently and saved HTML grounds a follow-up', async ({
 })
 
 test('model choice and clearly disabled future account controls', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true })
+  })
   await page.goto('/')
   await page.getByRole('combobox', { name: 'Model', exact: true }).selectOption('claude')
   await expect(page.getByRole('combobox', { name: 'Model', exact: true })).toHaveValue('claude')

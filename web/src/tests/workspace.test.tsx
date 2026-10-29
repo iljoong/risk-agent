@@ -88,6 +88,7 @@ it('keeps generated HTML in an opaque sandbox rather than the app DOM', () => {
 })
 
 it('allows clearing automatic artifact context before sending a question', async () => {
+  vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
   const original = fetch
   const saved = { ...chat, title: 'Saved chat', artifacts: [{ id: 'large-artifact', title: 'Large draft', version: 1, text_content: 'draft', parent_version_id: null }] }
   const requests: string[] = []
@@ -105,6 +106,7 @@ it('allows clearing automatic artifact context before sending a question', async
   await user.click(screen.getByRole('button', { name: 'Send message' }))
   await waitFor(() => expect(requests.length).toBe(1))
   expect(JSON.parse(requests[0]).artifact_version_id).toBeNull()
+  expect(JSON.parse(requests[0]).client_request_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
 })
 
 it('does not put an upload from a previous chat into the current composer', async () => {

@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
 
 test('evidence desk persists amendments and invalidates reviewed notes after material changes', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true })
+  })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto('/')

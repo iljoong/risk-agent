@@ -1,4 +1,5 @@
 import { API_BASE } from '../api/client'
+import { createRequestId } from '../api/requestId'
 import type { Alert, InvestigationAction, RevisionRecord, StateEnvelope } from './types'
 
 export class InvestigationError extends Error {
@@ -27,6 +28,6 @@ export const investigations = {
     `/api/chats/${chat}/investigation/history${before === undefined ? '' : `?before=${before}`}`),
   action: (chat: string, action: InvestigationAction, payload: Record<string, unknown>, expected_revision: number) =>
     request<{ revision: number; sequence: number; turn_id?: string; task_id?: string }>(`/api/chats/${chat}/investigation/actions`, {
-      client_request_id: crypto.randomUUID(), expected_revision, action, payload,
+      client_request_id: createRequestId(), expected_revision, action, payload,
     }),
 }
